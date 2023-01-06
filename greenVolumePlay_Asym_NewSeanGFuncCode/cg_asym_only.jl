@@ -6,7 +6,7 @@ using product, LinearAlgebra, vector
 
 # m is the maximum number of iterations
 function cg(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
-    tol = 1e-5 # The program terminates once 
+    # tol = 1e-5 # The program terminates once 
     # there is an r for which its norm is smaller
     # than the chosen tolerance. 
 

@@ -162,7 +162,7 @@ l = [0.75] # initial Lagrange multipliers
 # # Start 
 bfgs = BFGS_fakeS_with_restart_pi(gMemSlfN,gMemSlfA,l,dual,P,chi_inv_coeff,ei,
 cellsA,validityfunc,power_iteration_second_evaluation)
-# the BFGS_fakeS_with_restart_pi function can be found in the bfgs_power_iteration_asym_only file
+# The BFGS_fakeS_with_restart_pi function can be found in the bfgs_power_iteration_asym_only file
 dof = bfgs[1]
 grad = bfgs[2]
 dualval = bfgs[3]

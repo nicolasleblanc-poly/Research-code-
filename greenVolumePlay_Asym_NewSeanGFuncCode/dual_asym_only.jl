@@ -1,6 +1,6 @@
 module dual_asym_only
 export dual, c1
-using b_asym_only, gmres, product, cg_asym_only
+using b_asym_only, gmres, product, cg_asym_only, bicg_asym_only, bicgstab_asym_only
 # Code to get the value of the objective and of the dual.
 # The code also calculates the constraints
 # and can return the gradient.
@@ -47,8 +47,14 @@ function dual(l,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_grad)
     # When GMRES is used as the T solver 
     # T = GMRES_with_restart(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
 
-    # When CG is used as the T solver 
-    T = cg(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+    # When conjugate gradient is used as the T solver 
+    # T = cg(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+
+    # When biconjugate gradient is used as the T solver 
+    # T = bicg(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+
+    # When stabilized biconjugate gradient is used as the T solver 
+    T = bicgstab(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
 
     g = ones(Float64, length(l), 1)
     # print("C1(T)", C1(T)[1], "\n")
