@@ -1,6 +1,6 @@
 module dual_asym_only
 export dual, c1
-using b_asym_only, gmres, product
+using b_asym_only, gmres, product, cg_asym_only
 # Code to get the value of the objective and of the dual.
 # The code also calculates the constraints
 # and can return the gradient.
@@ -43,7 +43,13 @@ function dual(l,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_grad)
     print("l ", l, "\n")
     print("b ", b, "\n")
     # l = [2] # initial Lagrange multipliers
-    T = GMRES_with_restart(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+
+    # When GMRES is used as the T solver 
+    # T = GMRES_with_restart(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+
+    # When CG is used as the T solver 
+    T = cg(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+
     g = ones(Float64, length(l), 1)
     # print("C1(T)", C1(T)[1], "\n")
     # print("C2(T)", C2(T)[1], "\n")

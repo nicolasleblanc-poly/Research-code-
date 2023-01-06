@@ -1,7 +1,7 @@
 using LinearAlgebra, LinearAlgebra.BLAS, Distributed, FFTW, Cubature, 
 Base.Threads, FastGaussQuadrature, MaxGStructs, MaxGCirc, MaxGBasisIntegrals, 
 MaxGOpr, Printf, MaxGParallelUtilities, MaxGCUDA, Random, 
-product, bfgs_power_iteration_asym_only, dual_asym_only, gmres
+product, bfgs_power_iteration_asym_only, dual_asym_only, gmres, item_asym_only, cg_asym_only
 
 # The following latex files explains the different functions of the program
 # https://www.overleaf.com/read/yrdmwzjhqqqs
@@ -156,7 +156,8 @@ Pdag = P
 # b = bv(ei, l,P)
 l = [0.75] # initial Lagrange multipliers
 
-# This is the code for the main function call using bfgs with the power iteration
+# BFGS call code using gmres 
+# This is the code for the main function call using BFGS with the power iteration
 # method to solve for the Lagrange multiplier and gmres to solve for |T>.
 # # Start 
 bfgs = BFGS_fakeS_with_restart_pi(gMemSlfN,gMemSlfA,l,dual,P,chi_inv_coeff,ei,
@@ -172,9 +173,20 @@ print("dualval ", dualval, "\n")
 print("objval ", objval, "\n")
 # End 
 
+# ITEM call code 
+# item = ITEM(gMemSlfN, gMemSlfA,l,dual,P,chi_inv_coeff,ei,cellsA,validityfunc) 
+# print("dof ", item[1], "\n")
+# print("grad ", item[2], "\n")
+# print("dualval ", item[3], "\n")
+# print("objval ", item[4], "\n")
 
+
+# Test code 
 # testvect = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3,1)
 # rand!(testvect)
 # print("Gv_AA(gMemSlfN, cellsA, vec) ", Gv_AA(gMemSlfN, cellsA, testvect), "\n")
 # print("l[1]*asym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,testvect)", l[1]*asym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,testvect)
 # , "\n")
+
+
+
