@@ -62,7 +62,7 @@ function ITEM(x0)
     # end  
     
     iteration = 0
-    for i = 1:100000
+    for i = 1:40000
         Ak_p1=((1+q)*Ak+2*(1+sqrt((1+Ak)*(1+q*Ak))))/(1-q)^2
         bk=Ak/((1-q)*Ak_p1)
         dk=(((1-q)^2)*Ak_p1-(1+q)*Ak)/(2*(1+q+q*Ak))

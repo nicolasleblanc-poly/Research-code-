@@ -80,7 +80,21 @@ function dual(l,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_grad)
     print("l ", l, "\n")
     print("b ", b, "\n")
     # l = [2] # initial Lagrange multipliers
+    
+    # When GMRES is used as the T solver
     T = GMRES_with_restart(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+    
+    # When conjugate gradient is used as the T solver 
+    # T = cg(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+
+    # When biconjugate gradient is used as the T solver 
+    # T = bicg(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+
+    # When stabilized biconjugate gradient is used as the T solver 
+    # T = bicgstab(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+    
+    
+    
     g = ones(Float64, length(l), 1)
     # print("C1(T)", C1(T)[1], "\n")
     # print("C2(T)", C2(T)[1], "\n")

@@ -154,7 +154,7 @@ P = I # this is the real version of the identity matrix since we are considering
 Pdag = P
 # let's get the initial b vector (aka using the initial Lagrange multipliers). Done for test purposes
 # b = bv(ei, l,P)
-l = [5, 10] # initial Lagrange multipliers
+l = [0.75, 0.5] # initial Lagrange multipliers
 
 # This is the code for the main function call using bfgs with the power iteration
 # method to solve for the Lagrange multiplier and gmres to solve for |T>.
@@ -171,6 +171,14 @@ print("grad ", grad, "\n")
 print("dualval ", dualval, "\n")
 print("objval ", objval, "\n")
 # End 
+
+# ITEM call code 
+item = ITEM(gMemSlfN, gMemSlfA,l,dual,P,chi_inv_coeff,ei,cellsA,validityfunc) 
+print("dof ", item[1], "\n")
+print("grad ", item[2], "\n")
+print("dualval ", item[3], "\n")
+print("objval ", item[4], "\n")
+
 
 
 # testvect = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3,1)

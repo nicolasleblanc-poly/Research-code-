@@ -57,6 +57,7 @@ function c2(P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # symmetric part
     I_EPT = real(EPT) 
     print("I_EPT ", I_EPT, "\n")
     # Right term => asym*T
+    
     # G|v> type calculation
 
     # print("l ", l, "\n")
@@ -81,7 +82,19 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     print("l2 ", l2, "\n")
     print("b ", b, "\n")
     # l = [2] # initial Lagrange multipliers
+    
+    # When GMRES is used as the T solver
     T = GMRES_with_restart(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+    # When conjugate gradient is used as the T solver 
+    # T = cg(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+
+    # When biconjugate gradient is used as the T solver 
+    # T = bicg(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+
+    # When stabilized biconjugate gradient is used as the T solver 
+    # T = bicgstab(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+   
+   
     g = ones(Float64, length(l), 1)
     g2 = ones(Float64, length(l2), 1)
     # print("C1(T)", C1(T)[1], "\n")

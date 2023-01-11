@@ -3,11 +3,12 @@ module item_asym_only
 using LinearAlgebra, bfgs_power_iteration_asym_only
 export ITEM 
 
-function ITEM(gMemSlfN, gMemSlfA,x0,Dual,P,chi_inv_coeff,ei,cellsA,validityfunc)
+function ITEM(gMemSlfN, gMemSlfA,l, l2,Dual,P,chi_inv_coeff,ei,cellsA,validityfunc)
     mu=10e-8
     L=10e6
     q=mu/L
     Ak=0
+    x0 = vcat(l,l2) 
     xk=x0
     yk=x0 # if norm(xk_p1-xk)<tol || norm(zk_p1-zk)<tol# && validityfunc(yk,cellsA,gMemSlfN, gMemSlfA, chi_inv_coeff, P)>0
         #     print("Terminated while loop \n")
@@ -51,7 +52,7 @@ function ITEM(gMemSlfN, gMemSlfA,x0,Dual,P,chi_inv_coeff,ei,cellsA,validityfunc)
         # val_yk = Dual(yk,grad,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,[],true)
         # Old: (yk, grad, fSlist, tsolver,ei,  ei_tr, chi_invdag, Gdag, Pv, get_grad=true)
         # T_yk = val_yk[1] # We don't use this here but it was used to calculate the gradient below
-        val_yk = Dual(yk,grad,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,[],true)
+        val_yk = Dual(yk[1:length(l)], yk[length(l)+1:end],grad,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,[],true)
         g_yk = val_yk[2] # This is the gradient evaluated at the |T> found with the yk multipliers
         # We can now calculate the new xk and zk values
         xk_p1 = yk.-(1/L)*g_yk # *yk_m1
@@ -66,21 +67,21 @@ function ITEM(gMemSlfN, gMemSlfA,x0,Dual,P,chi_inv_coeff,ei,cellsA,validityfunc)
 
     end 
     # yk 
-    val_yk = Dual(yk,grad,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,[],true)
+    val_yk = Dual(yk[1:length(l)],yk[length(l)+1:end],grad,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,[],true)
     # (yk, grad, fSlist, tsolver,ei,  ei_tr, chi_invdag, Gdag, Pv, get_grad=true)
     D_yk = val_yk[1]
     g_yk = val_yk[2]
     obj_yk = val_yk[3]
 
     # xk 
-    val_xk = Dual(xk,grad,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,[],true)
+    val_xk = Dual(xk[1:length(l)],xk[length(l)+1:end],grad,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,[],true)
     # Dual(yk, grad, fSlist, tsolver,ei,  ei_tr, chi_invdag, Gdag, Pv, get_grad=true)
     D_xk = val_xk[1]
     g_xk = val_xk[2]
     obj_xk = val_xk[3]
 
     # zk 
-    val_zk = Dual(zk,grad,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,[],true)
+    val_zk = Dual(zk[1:length(l)],zk[length(l)+1:end],grad,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,[],true)
     # (yk, grad, fSlist, tsolver,ei,  ei_tr, chi_invdag, Gdag, Pv, get_grad=true)
     D_zk = val_zk[1]
     g_zk = val_zk[2]

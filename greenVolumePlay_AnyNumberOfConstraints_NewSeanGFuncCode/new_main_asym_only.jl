@@ -174,6 +174,14 @@ print("objval ", objval, "\n")
 # End 
 
 
+# ITEM call code 
+# item = ITEM(gMemSlfN, gMemSlfA,l,dual,P,chi_inv_coeff,ei,cellsA,validityfunc) 
+# print("dof ", item[1], "\n")
+# print("grad ", item[2], "\n")
+# print("dualval ", item[3], "\n")
+# print("objval ", item[4], "\n")
+
+
 # testvect = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3,1)
 # rand!(testvect)
 # print("Gv_AA(gMemSlfN, cellsA, vec) ", Gv_AA(gMemSlfN, cellsA, testvect), "\n")
