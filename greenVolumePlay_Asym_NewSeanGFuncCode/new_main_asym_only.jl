@@ -145,6 +145,9 @@ chi_coeff = 3.0 + 0.01im
 chi_inv_coeff = 1/chi_coeff 
 chi_inv_coeff_dag = conj(chi_inv_coeff)
 # define the projection operators
+
+# What is the length of P? How do we fill in P precisely?
+
 P = I # this is the real version of the identity matrix since we are considering 
 # the symmetric and ansymmetric parts of some later calculations. 
 # If we were only considering the symmetric parts of some latter calculations,
