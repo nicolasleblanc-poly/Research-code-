@@ -7,8 +7,8 @@ P in 3D
 
 
 function ITEM(gMemSlfN, gMemSlfA,l, l2,Dual,P,chi_inv_coeff,ei,cellsA,validityfunc)
-    mu=10e-4
-    L=10e2
+    mu=10e-8 
+    L=10e6
     q=mu/L
     Ak=0
     x0 = vcat(l,l2) 
