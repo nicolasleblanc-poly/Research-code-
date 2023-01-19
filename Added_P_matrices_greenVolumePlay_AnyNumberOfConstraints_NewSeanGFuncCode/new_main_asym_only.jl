@@ -20,55 +20,6 @@ fftwThreads = FFTW.get_num_threads()
 println("MaxGTests initialized with ", nthreads(), 
 	" Julia threads, $blasThreads BLAS threads, and $fftwThreads FFTW threads.")
 
-
-# # Old Green function code start
-# # Setup for the creation of the total Green function
-# # Start 
-# # Define test volume, all lengths are defined relative to the wavelength. 
-# # Number of cells in the volume. 
-# # cellsA = [8, 8, 8]
-# cellsA = [2, 2, 2]
-# cellsB = [1, 1, 1]
-# # Edge lengths of a cell relative to the wavelength. 
-# scaleA = (0.02, 0.02, 0.02)
-# scaleB = (0.02, 0.02, 0.02)
-# # Center position of the volume. 
-# coordA = (0.0, 0.0, 0.0)
-# coordB = (-0.3, 0.0, 0.0)
-# # Create MaxG volumes.
-# volA = genMaxGVol(MaxGDom(cellsA, scaleA, coordA))
-# volB = genMaxGVol(MaxGDom(cellsB, scaleB, coordB))
-# # Information for Green function construction. 
-# # Complex frequency ratio. 
-# freqPhase = 1.0 + im * 0.0
-# # Gauss-Legendre approximation orders. 
-# ordGLIntFar = 2
-# ordGLIntMed = 8
-# ordGLIntNear = 16
-# # Cross over points for Gauss-Legendre approximation.
-# crossMedFar = 16
-# crossNearMed = 8
-# assemblyInfo = MaxGAssemblyOpts(freqPhase, ordGLIntFar, ordGLIntMed, 
-# 	ordGLIntNear, crossMedFar, crossNearMed)
-# # Pre-allocate memory for circulant green function vector. 
-# # Let's say we are only considering the AA case for simplicity
-# greenCircAA = Array{ComplexF64}(undef, 3, 3, 2 * cellsA[1], 2 * cellsA[2], 
-# 	2 * cellsA[3])
-# greenCircAB = Array{ComplexF64}(undef, 3, 3, cellsB[1] + cellsA[1], cellsB[2] +
-# 	cellsA[2], cellsB[3] + cellsA[3])
-# # End 
-
-# CPU computation of Green function
-# Start 
-# The first index is the target and the second is the source
-# # For the AA case 
-# genGreenSlf!(greenCircAA, volA, assemblyInfo)
-# # For the AB case 
-# genGreenExt!(greenCircAB, volA, volB, assemblyInfo)
-# # End 
-# # Old Green function code end
-
-
 # New Green function code start 
 # Define test volume, all lengths are defined relative to the wavelength. 
 # Number of cells in the volume. 
@@ -156,7 +107,24 @@ Pdag = P
 # b = bv(ei, l,P)
 l = [0.75] # Initial Lagrange multipliers associated to the asymmetric constraints
 l2 = [] # Initial Lagrange multipliers associated to the symmetric constraints
-print("Sum of lengths ", length(l)+length(l2), "\n")
+l_sum = length(l)+length(l2)
+print("Sum of lengths ", l_sum, "\n")
+
+# Code to the generation of P matrices that are turned into vectors since the P 
+# matrices are 0 except on the main diagonal 
+
+M = Array{ComplexF64}(undef, cellsA[1], cellsA[2], cellsA[3], 3) 
+for i=0:l_sum-1
+	M[i*cellsA[1]/l_sum+1:(i+1)*cellsA[1]/l_sum,i*cellsA[2]/l_sum+1:(i+1)*cellsA[2]/l_sum,i*cellsA[3]/l_sum+1:(1+i)*cellsA[3]/l_sum,:] = 1
+end 
+# Problems/questions:
+# 1. I added a *3 to the size of M because we need it and you didn't say it before, so I just wanted to make sure.
+# I guess we reset M at each iteration, so whenever we generate a new P?
+# 2. How to use linear indexing to only get the diagonal of the M matrix for a given subsection?
+# 3. I guess we need to use an element-wise multiplication for the P*(chi^{-1 \dag}-G_0^{\dag}) calculation?
+# 4. Davidson iteration program needs an explicit multiplier solver, which I find weird 
+
+
 # This is the code for the main function call using bfgs with the power iteration
 # method to solve for the Lagrange multiplier and gmres to solve for |T>.
 # # Start 
