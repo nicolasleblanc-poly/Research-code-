@@ -154,8 +154,8 @@ P = I # this is the real version of the identity matrix since we are considering
 Pdag = P
 # let's get the initial b vector (aka using the initial Lagrange multipliers). Done for test purposes
 # b = bv(ei, l,P)
-l = [0.75] # Initial Lagrange multipliers associated to the asymmetric constraints
-l2 = [] # Initial Lagrange multipliers associated to the symmetric constraints
+l = [0.25] # Initial Lagrange multipliers associated to the asymmetric constraints
+l2 = [0.75] # Initial Lagrange multipliers associated to the symmetric constraints
 print("Sum of lengths ", length(l)+length(l2), "\n")
 # This is the code for the main function call using bfgs with the power iteration
 # method to solve for the Lagrange multiplier and gmres to solve for |T>.

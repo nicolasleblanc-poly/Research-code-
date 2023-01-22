@@ -1,4 +1,4 @@
-using LinearAlgebra, LinearAlgebra.BLAS, Distributed, FFTW, Cubature, 
+using LinearAlgebra, LinearAlgebra.BLAS, Distributed, FFTW, andoCubature, 
 Base.Threads, FastGaussQuadrature, MaxGStructs, MaxGCirc, MaxGBasisIntegrals, 
 MaxGOpr, Printf, MaxGParallelUtilities, MaxGCUDA, Random, 
 product, bfgs_power_iteration_asym_only, dual_asym_only, gmres
@@ -105,25 +105,100 @@ P = I # this is the real version of the identity matrix since we are considering
 Pdag = P
 # let's get the initial b vector (aka using the initial Lagrange multipliers). Done for test purposes
 # b = bv(ei, l,P)
-l = [0.75] # Initial Lagrange multipliers associated to the asymmetric constraints
-l2 = [] # Initial Lagrange multipliers associated to the symmetric constraints
-l_sum = length(l)+length(l2)
-print("Sum of lengths ", l_sum, "\n")
+
+# The bunch of code below was for when I thought it was better to define a set of 
+# initial multiplier values and then generate P's. When using the eventual software,
+# the user doesn't care about Lagrange multipliers. They only care about constraints
+# which are defined by the elements of the diagonal of the P's. 
+# Start old code 
+# l = [0.75] # Initial Lagrange multipliers associated to the asymmetric constraints
+# l2 = [0.25] # Initial Lagrange multipliers associated to the symmetric constraints
+# l_sum = length(l)+length(l2)
+# print("Sum of lengths ", l_sum, "\n")
 
 # Code to the generation of P matrices that are turned into vectors since the P 
 # matrices are 0 except on the main diagonal 
 
-M = Array{ComplexF64}(undef, cellsA[1], cellsA[2], cellsA[3], 3) 
-for i=0:l_sum-1
-	M[i*cellsA[1]/l_sum+1:(i+1)*cellsA[1]/l_sum,i*cellsA[2]/l_sum+1:(i+1)*cellsA[2]/l_sum,i*cellsA[3]/l_sum+1:(1+i)*cellsA[3]/l_sum,:] = 1
-end 
+# M = Array{ComplexF64}(undef, cellsA[1], cellsA[2], cellsA[3], 3) 
+# for i=0:l_sum-1
+# 	M[i*cellsA[1]/l_sum+1:(i+1)*cellsA[1]/l_sum,i*cellsA[2]/l_sum+1:(i+1)*cellsA[2]/l_sum,i*cellsA[3]/l_sum+1:(1+i)*cellsA[3]/l_sum,:] = 1
+# end 
 # Problems/questions:
 # 1. I added a *3 to the size of M because we need it and you didn't say it before, so I just wanted to make sure.
 # I guess we reset M at each iteration, so whenever we generate a new P?
 # 2. How to use linear indexing to only get the diagonal of the M matrix for a given subsection?
 # 3. I guess we need to use an element-wise multiplication for the P*(chi^{-1 \dag}-G_0^{\dag}) calculation?
 # 4. Davidson iteration program needs an explicit multiplier solver, which I find weird 
+# End of old code 
 
+# Start of new code (Saturday, January 21st 2023 at 19:37)
+# Let's start by generating the P's. The most simple and logical situation 
+# for splitting the cubic domain (so in 3D) is to cut the domain in x, in y
+# and in z in half. Let's assume that the amount of cells is always even
+# to avoid having decimal terms when we divide by 2. We then get 8 little/baby cubes. 
+# The indexes will be [1:half] or [half:end]. For all of the baby cubes, the idea is 
+# the same. We first need to create an array that we shall call M. M has the same dimensions of G 
+# (the Green function), so (N_x,N_y,N_z,3) where N_i is the amount of cells in
+# the i direction. To clarify, Nx=cellsA[1], Ny=cellsA[2], Nz=cellsA[3].
+# Next, we need to select a baby cube using linear indexing and 
+# add 1's everywhere in this part of the total array (the part associated with the 
+# baby cube). We can then use diag(M) to get the diagonal of the diagonal of MaxGAssemblyOpts
+# as a vector that we can then use in the rest of the program. Yeah! :)
+# Not sure how to do the multiple lines of code below in a loop.
+# The loop would be needed to simplify everything and to add 
+# the depth parameter that would allow to add another division 
+# by 2 in the x, y and z direction, which would be a depth of 2. This would allow to have 64
+# constraints instead of 8. We could also do this for a depth of 3, where we could have 
+# 512 constraints, which is kinda getting extreme but nonetheless pertinent. 
+# First baby cube: [1:cellsA[1]/2, 1:cellsA[2]/2, 1:cellsA[3]/2]
+M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
+M[1:cellsA[1]/2, 1:cellsA[2]/2, 1:cellsA[3]/2] = 1.0
+P1 = diag(M)
+# Second baby cube: [1:cellsA[1]/2, 1:cellsA[2]/2, cellsA[3]/2+1:end]
+M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
+M[1:cellsA[1]/2, 1:cellsA[2]/2, cellsA[3]/2+1:end] = 1.0
+P2 = diag(M)
+# Third baby cube: [1:cellsA[1]/2, cellsA[2]/2+1:end, 1:cellsA[3]/2]
+M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
+M[1:cellsA[1]/2, cellsA[2]/2+1:end, 1:cellsA[3]/2] = 1.0
+P3 = diag(M)
+# Fourth baby cube: [1:cellsA[1]/2, cellsA[2]/2+1:end, cellsA[3]/2+1:end]
+M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
+M[1:cellsA[1]/2, cellsA[2]/2+1:end, cellsA[3]/2+1:end] = 1.0
+P4 = diag(M)
+
+# Fifth baby cube: [cellsA[1]/2+1:end, 1:cellsA[2]/2, 1:cellsA[3]/2]
+M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
+M[cellsA[1]/2+1:end, 1:cellsA[2]/2, 1:cellsA[3]/2] = 1.0
+P5 = diag(M)
+# Sixth baby cube: [cellsA[1]/2+1:end, cellsA[2]/2+1:end, 1:cellsA[3]/2]
+M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
+M[cellsA[1]/2+1:end, cellsA[2]/2+1:end, 1:cellsA[3]/2] = 1.0
+P6 = diag(M)
+# Seventh baby cube: [cellsA[1]/2+1:end, 1:cellsA[2]/2, cellsA[3]/2+1:end]
+M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
+M[cellsA[1]/2+1:end, 1:cellsA[2]/2, cellsA[3]/2+1:end] = 1.0
+P7 = diag(M)
+# Eigth baby cube: [cellsA[1]/2+1:end, cellsA[2]/2+1:end, cellsA[3]/2+1:end]
+M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
+M[cellsA[1]/2+1:end, cellsA[2]/2+1:end, cellsA[3]/2+1:end] = 1.0
+P8 = diag(M)
+
+# For simplicity, I'm going to say that the first constraints are asymmetric and the ones 
+# after are symmetric 
+P = [P1,P2,P3,P4,P5,P6,P7,P8]
+# Is P always real?
+
+number_asym_constraints = 4
+number_sym_constraints = 4
+l = Array{ComplexF64}(undef, number_asym_constraints,1) # L mults related to asym constraints 
+l2 = Array{ComplexF64}(undef, number_sym_constraints, 1) # L mults related to sym constraints
+# Let's attribute random starting Lagrange multipliers that are between 0 and 3 (kinda 
+# arbitrary but we know the L mults are generally small)
+rand!(l,(0.01:3))
+rand!(l2,(0.01:3))
+
+# End of new code for generating P's and then Lagrange multipliers 
 
 # This is the code for the main function call using bfgs with the power iteration
 # method to solve for the Lagrange multiplier and gmres to solve for |T>.

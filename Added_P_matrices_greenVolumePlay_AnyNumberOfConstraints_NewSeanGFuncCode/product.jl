@@ -96,22 +96,57 @@ function asym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
 	return (term_1.-term_2.+ term_4.-term_3)./2im # 
 end 
 
-function sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
+# Old sym_vect function when the P's weren't considered 
+# function sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
+# 	# print("size(vect)", size(vect), "\n")
+# 	chi_inv_coeff_dag = conj(chi_inv_coeff)
+# 	term_1 = chi_inv_coeff_dag*vec # *P 
+# 	term_2 = GAdjv_AA(gMemSlfA, cellsA, vec) # P*
+# 	term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
+# 	term_4 = Gv_AA(gMemSlfN, cellsA, vec) # P*
+# 	# print("size(term_1)", size(term_1), "\n")
+# 	# print("size(term_2)", size(term_2), "\n")
+# 	# print("term_3 " , term_3, "\n")
+# 	return (term_1.-term_2.- term_4.+term_3)./2  
+# end
+
+function sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P_vec)
+	G_Adjoint_AA_P_vect_product = GAdjv_AA(gMemSlfA, cellsA, P.*vec) # P*
+	P_G_AA_vect_product = P.*Gv_AA(gMemSlfN, cellsA, vec)
+
 	# print("size(vect)", size(vect), "\n")
 	chi_inv_coeff_dag = conj(chi_inv_coeff)
-	term_1 = chi_inv_coeff_dag*vec # *P 
-	term_2 = GAdjv_AA(gMemSlfA, cellsA, vec) # P*
+	term_1 = chi_inv_coeff_dag*P_vec # *P 
+	term_2 = G_Adjoint_AA_vect_product.*P # GAdjv_AA(gMemSlfA, cellsA, vec) # P*
 	term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
-	term_4 = Gv_AA(gMemSlfN, cellsA, vec) # P*
+	term_4 = G_AA_vect_product.*P # Gv_AA(gMemSlfN, cellsA, vec) # P*
 	# print("size(term_1)", size(term_1), "\n")
 	# print("size(term_2)", size(term_2), "\n")
 	# print("term_3 " , term_3, "\n")
 	return (term_1.-term_2.- term_4.+term_3)./2  
 end
 
+# New sym and asym sum function: 
 function sym_and_asym_sum(l,l2,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, vec)	
 	# val = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3,1) 
 	val = zeros(ComplexF64,cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+	sum_LM_P_vec_product = zeros(ComplexF64,cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+	total_LM = vcat(l,l2) # Combine the sym and asym L mults into one list
+	
+	# For 3 of the 4 terms in sym and in asym, there is a P|v> product. 
+	# We can therefore just compute this product once for each P. This 
+	# avoids calculating twice (one for sym and once for asym). It 
+	# doesn't seem like it would make much of a different but 
+	# doing something twice a lot of times kinda makes a big/huge difference.
+
+	for i in eachindex(total_LM) # Same as length(l)+length(l2)
+		sum_LM_P_vec_product = total_LM[i]*(P[i].*vec)
+	end 
+	
+	# The two following variables just need to be computed once and will be used 
+	# in the asym_vect and sym_vect functions. 
+	G_Adjoint_AA_P_vect_product = GAdjv_AA(gMemSlfA, cellsA, P.*vec) # P*
+	P_G_AA_vect_product = P.*Gv_AA(gMemSlfN, cellsA, vec)
 	# Asym 
 	if length(l) > 0
         for i in eachindex(l)
@@ -126,6 +161,29 @@ function sym_and_asym_sum(l,l2,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, vec)
     end 
 	return val 
 end 
+
+# Old sym and asym sum function
+# function sym_and_asym_sum(l,l2,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, vec)	
+# 	# val = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3,1) 
+# 	val = zeros(ComplexF64,cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+# 	# The two following variables just need to be computed once and will be used 
+# 	# in the asym_vect and sym_vect functions. 
+# 	# G_Adjoint_AA_P_vect_product = GAdjv_AA(gMemSlfA, cellsA, P.*vec) # P*
+# 	# P_G_AA_vect_product = P.*Gv_AA(gMemSlfN, cellsA, vec)
+# 	# Asym 
+# 	if length(l) > 0
+#         for i in eachindex(l)
+#             val += (l[i])*asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, vec)
+#         end 
+#     end 
+# 	# Sym 
+#     if length(l2) > 0
+#         for j in eachindex(l2)
+#             val += (l2[j])*sym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, vec)
+#         end 
+#     end 
+# 	return val 
+# end 
 
 end
 

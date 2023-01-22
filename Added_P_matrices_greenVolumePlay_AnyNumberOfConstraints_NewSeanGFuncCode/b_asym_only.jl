@@ -6,36 +6,44 @@ function bv_asym_only(ei, l, l2, P)
     # print("(l[1]/(2im))*P*ei  ", (l[1]/(2im))*P*ei , "\n")
 
     # If we have a negative in front of the second term 
-    # return (-((1+l[1])/(2im))+l[2]/2).*ei 
+    # return (-((1+l[1])/(2im))+l[2]/2).*ei # Super old 
 
-    val = -1/(2im)
-    if length(l) > 0
+    # # How the code was before adding the P's: 
+    # # Start 
+    # val = -1/(2im)
+    # if length(l) > 0 # l is associated to the asymmetric constraints 
+    #     for i in eachindex(l)
+    #         val -= l[i]/(2im)
+    #     end 
+    # end 
+    # if length(l2) > 0 # l2 is associated to the symmetric constraints 
+    #     for j in eachindex(l2)
+    #         val += l2[j]/2
+    #     end 
+    # end 
+    # return val.*ei
+    # # End 
+
+    # How the code is after adding the P's: 
+    # Start 
+    # One super important thing to understand the code below 
+    # is that I assumed that the first set of P's were associated
+    # with the asymmetric constraints and the rest of the P's 
+    # were associated with the symmetric constraints. 
+    val = (-1/(2im)).*ei 
+    # Asym 
+    if length(l) > 0 # l is associated to the asymmetric constraints 
         for i in eachindex(l)
-            val -= l[i]/(2im)
+            val -= (l[i]/(2im))*(P[i].*ei)
         end 
     end 
-    if length(l2) > 0
+    # Sym 
+    if length(l2) > 0 # l2 is associated to the symmetric constraints 
         for j in eachindex(l2)
-            val += l2[j]/2
+            val += (l2[j]/2)*(P[j+Int(length(l))].*ei)
         end 
     end 
-    return val.*ei
-    
-    # l[1]*
-    # You can either divide by l[1] in b right here or multiply by l[1] in A in gmres
-
-
-    # return .-ei/(2im) - (l[1]/(2im)).*ei # *P
-
-    # At the end of the intership, we weren't sure if there was a negative
-    # in front of the second term or not. 
-
-    # If we don't have a negative in front of the second term 
-    # return .-ei/(2im) + (l[1]/(2im)).*ei # *P
-
-    # just like for A, the first lambda is associated 
-    # with the asym part (l) and the second lambda is 
-    # associated with the sym part (v)
+    return val # val.*ei
+    # End 
 end
-
 end

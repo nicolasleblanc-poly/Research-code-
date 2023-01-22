@@ -154,7 +154,7 @@ P = I # this is the real version of the identity matrix since we are considering
 Pdag = P
 # let's get the initial b vector (aka using the initial Lagrange multipliers). Done for test purposes
 # b = bv(ei, l,P)
-l = [0.75, 0.5] # initial Lagrange multipliers
+l = [0.25, 0.75] # initial Lagrange multipliers
 
 # This is the code for the main function call using bfgs with the power iteration
 # method to solve for the Lagrange multiplier and gmres to solve for |T>.

@@ -8,7 +8,7 @@ function c1(P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # asymmetric part
     # Left term
     # print("In c1 \n")
     PT = T  # P*
-    # ei_tr = transpose(ei) # we have <ei^*| instead of <ei|\
+    # ei_tr = transpose(ei) # we have <ei^*| instead of <ei|
     # print("size(ei) ", size(ei), "\n")
     # print("size(T) ", size(T), "\n")
     ei_tr = conj.(transpose(ei))
