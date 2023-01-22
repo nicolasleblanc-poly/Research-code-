@@ -80,6 +80,24 @@ function G_offset(v, mode) # offset,
 	end
 end
 
+# Old sym_vect function when the P's weren't considered 
+# function asym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
+# 	# print("size(vect)", size(vect), "\n")
+# 	chi_inv_coeff_dag = conj(chi_inv_coeff)
+# 	term_1 = chi_inv_coeff_dag*vec # *P 
+# 	term_2 = GAdjv_AA(gMemSlfA, cellsA, vec) # P*
+# 	term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
+# 	term_4 = Gv_AA(gMemSlfN, cellsA, vec) # P*
+# 	# print("size(term_1)", size(term_1), "\n")
+# 	# print("size(term_2)", size(term_2), "\n")
+# 	# print("term_1 " , term_1, "\n")
+# 	# print("term_2 " , term_2, "\n")
+# 	# print("term_3 " , term_3, "\n")
+# 	# print("term_4 " , term_4, "\n")
+# 	return (term_1.-term_2.+ term_4.-term_3)./2im # 
+# end 
+
+# New asym vect product code 
 function asym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
 	# print("size(vect)", size(vect), "\n")
 	chi_inv_coeff_dag = conj(chi_inv_coeff)
@@ -96,6 +114,7 @@ function asym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
 	return (term_1.-term_2.+ term_4.-term_3)./2im # 
 end 
 
+
 # Old sym_vect function when the P's weren't considered 
 # function sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
 # 	# print("size(vect)", size(vect), "\n")
@@ -110,6 +129,7 @@ end
 # 	return (term_1.-term_2.- term_4.+term_3)./2  
 # end
 
+# New sym vect product code 
 function sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P_vec)
 	G_Adjoint_AA_P_vect_product = GAdjv_AA(gMemSlfA, cellsA, P.*vec) # P*
 	P_G_AA_vect_product = P.*Gv_AA(gMemSlfN, cellsA, vec)
