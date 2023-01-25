@@ -81,103 +81,103 @@ function G_offset(v, mode) # offset,
 end
 
 # Old sym_vect function when the P's weren't considered 
-# function asym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
-# 	# print("size(vect)", size(vect), "\n")
-# 	chi_inv_coeff_dag = conj(chi_inv_coeff)
-# 	term_1 = chi_inv_coeff_dag*vec # *P 
-# 	term_2 = GAdjv_AA(gMemSlfA, cellsA, vec) # P*
-# 	term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
-# 	term_4 = Gv_AA(gMemSlfN, cellsA, vec) # P*
-# 	# print("size(term_1)", size(term_1), "\n")
-# 	# print("size(term_2)", size(term_2), "\n")
-# 	# print("term_1 " , term_1, "\n")
-# 	# print("term_2 " , term_2, "\n")
-# 	# print("term_3 " , term_3, "\n")
-# 	# print("term_4 " , term_4, "\n")
-# 	return (term_1.-term_2.+ term_4.-term_3)./2im # 
-# end 
-
-# New asym vect product code 
-function asym_vect(l,l2,gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
-	P_sum_asym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
-    # P sum
-    if length(l) > 0
-        for j in eachindex(l)
-            P_sum_asym += (l[j])*P[j]
-        end 
-    end 
-    P_sum_asym_T_product = P_sum_asym.*vec
+function asym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
+	# print("size(vect)", size(vect), "\n")
 	chi_inv_coeff_dag = conj(chi_inv_coeff)
-	term1 = ((chi_inv_coeff_dag+chi_inv_coeff)/2im)*P_sum_asym_T_product
-	term2 = (P_sum_asym/2).*GAdjv_AA(gMemSlfN, cellsA, T)
-    term3 = Gv_AA(gMemSlfA, cellsA, P_sum_asym_T_product/2)
-	# term2 = GAdjv_AA(gMemSlfA, cellsA, P_sum_asym_T_product/2im)
-	# term3 = (P_sum_asym/2im).*Gv_AA(gMemSlfN, cellsA, T)
-	return term1-term2+term3
-
-	# # print("size(vect)", size(vect), "\n")
-	# chi_inv_coeff_dag = conj(chi_inv_coeff)
-	# term_1 = chi_inv_coeff_dag*vec # *P 
-	# term_2 = GAdjv_AA(gMemSlfA, cellsA, vec) # P*
-	# term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
-	# term_4 = Gv_AA(gMemSlfN, cellsA, vec) # P*
-	# # print("size(term_1)", size(term_1), "\n")
-	# # print("size(term_2)", size(term_2), "\n")
-	# # print("term_1 " , term_1, "\n")
-	# # print("term_2 " , term_2, "\n")
-	# # print("term_3 " , term_3, "\n")
-	# # print("term_4 " , term_4, "\n")
-	# return (term_1.-term_2.+ term_4.-term_3)./2im # 
+	term_1 = chi_inv_coeff_dag*vec # *P 
+	term_2 = GAdjv_AA(gMemSlfA, cellsA, vec) # P*
+	term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
+	term_4 = Gv_AA(gMemSlfN, cellsA, vec) # P*
+	# print("size(term_1)", size(term_1), "\n")
+	# print("size(term_2)", size(term_2), "\n")
+	# print("term_1 " , term_1, "\n")
+	# print("term_2 " , term_2, "\n")
+	# print("term_3 " , term_3, "\n")
+	# print("term_4 " , term_4, "\n")
+	return (term_1.-term_2.+ term_4.-term_3)./2im # 
 end 
+
+# # New asym vect product code 
+# function asym_vect(l,l2,gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
+# 	P_sum_asym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+#     # P sum
+#     if length(l) > 0
+#         for j in eachindex(l)
+#             P_sum_asym += (l[j])*P[j]
+#         end 
+#     end 
+#     P_sum_asym_vec_product = P_sum_asym.*vec
+# 	chi_inv_coeff_dag = conj(chi_inv_coeff)
+# 	term1 = ((chi_inv_coeff_dag-chi_inv_coeff)/2im)*P_sum_asym_vec_product
+# 	term2 = (P_sum_asym/2im).*GAdjv_AA(gMemSlfN, cellsA, vec)
+#     term3 = Gv_AA(gMemSlfA, cellsA, P_sum_asym_vec_product/2im)
+# 	# term2 = GAdjv_AA(gMemSlfA, cellsA, P_sum_asym_T_product/2im)
+# 	# term3 = (P_sum_asym/2im).*Gv_AA(gMemSlfN, cellsA, T)
+# 	return term1-term2+term3
+
+# 	# # print("size(vect)", size(vect), "\n")
+# 	# chi_inv_coeff_dag = conj(chi_inv_coeff)
+# 	# term_1 = chi_inv_coeff_dag*vec # *P 
+# 	# term_2 = GAdjv_AA(gMemSlfA, cellsA, vec) # P*
+# 	# term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
+# 	# term_4 = Gv_AA(gMemSlfN, cellsA, vec) # P*
+# 	# # print("size(term_1)", size(term_1), "\n")
+# 	# # print("size(term_2)", size(term_2), "\n")
+# 	# # print("term_1 " , term_1, "\n")
+# 	# # print("term_2 " , term_2, "\n")
+# 	# # print("term_3 " , term_3, "\n")
+# 	# # print("term_4 " , term_4, "\n")
+# 	# return (term_1.-term_2.+ term_4.-term_3)./2im # 
+# end 
 
 
 # Old sym_vect function when the P's weren't considered 
-# function sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
-# 	# print("size(vect)", size(vect), "\n")
-# 	chi_inv_coeff_dag = conj(chi_inv_coeff)
-# 	term_1 = chi_inv_coeff_dag*vec # *P 
-# 	term_2 = GAdjv_AA(gMemSlfA, cellsA, vec) # P*
-# 	term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
-# 	term_4 = Gv_AA(gMemSlfN, cellsA, vec) # P*
-# 	# print("size(term_1)", size(term_1), "\n")
-# 	# print("size(term_2)", size(term_2), "\n")
-# 	# print("term_3 " , term_3, "\n")
-# 	return (term_1.-term_2.- term_4.+term_3)./2  
-# end
-
-# New sym vect product code 
-function sym_vect(l,l2,gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P_vec)
-	P_sum_sym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
-    # P sum
-    if length(l2) > 0
-        for j in eachindex(l)
-            P_sum_sym += (l2[j])*P[Int(length(l))+j]
-        end 
-    end 
-    P_sum_sym_T_product = P_sum_sym.*vec
+function sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
+	# print("size(vect)", size(vect), "\n")
 	chi_inv_coeff_dag = conj(chi_inv_coeff)
-	term1 = ((chi_inv_coeff_dag+chi_inv_coeff)/2im)*P_sum_sym_T_product
-	term2 = (P_sum_sym/2).*GAdjv_AA(gMemSlfN, cellsA, T)
-    term3 = Gv_AA(gMemSlfA, cellsA, P_sum_sym_T_product/2)
-	# term2 = GAdjv_AA(gMemSlfA, cellsA, P_sum_asym_T_product/2im)
-	# term3 = (P_sum_asym/2im).*Gv_AA(gMemSlfN, cellsA, T)
-	return term1-term2-term3
-
-
-	# G_Adjoint_AA_P_vect_product = GAdjv_AA(gMemSlfA, cellsA, P.*vec) # P*
-	# P_G_AA_vect_product = P.*Gv_AA(gMemSlfN, cellsA, vec)
-
-	# # print("size(vect)", size(vect), "\n")
-	# chi_inv_coeff_dag = conj(chi_inv_coeff)
-	# term_1 = chi_inv_coeff_dag*P_vec # *P 
-	# term_2 = G_Adjoint_AA_vect_product.*P # GAdjv_AA(gMemSlfA, cellsA, vec) # P*
-	# term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
-	# term_4 = G_AA_vect_product.*P # Gv_AA(gMemSlfN, cellsA, vec) # P*
-	# # print("size(term_1)", size(term_1), "\n")
-	# # print("size(term_2)", size(term_2), "\n")
-	# # print("term_3 " , term_3, "\n")
-	# return (term_1.-term_2.- term_4.+term_3)./2  
+	term_1 = chi_inv_coeff_dag*vec # *P 
+	term_2 = GAdjv_AA(gMemSlfA, cellsA, vec) # P*
+	term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
+	term_4 = Gv_AA(gMemSlfN, cellsA, vec) # P*
+	# print("size(term_1)", size(term_1), "\n")
+	# print("size(term_2)", size(term_2), "\n")
+	# print("term_3 " , term_3, "\n")
+	return (term_1.-term_2.- term_4.+term_3)./2  
 end
+
+# # New sym vect product code 
+# function sym_vect(l,l2,gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P_vec)
+# 	P_sum_sym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+#     # P sum
+#     if length(l2) > 0
+#         for j in eachindex(l)
+#             P_sum_sym += (l2[j])*P[Int(length(l))+j]
+#         end 
+#     end 
+#     P_sum_sym_vec_product = P_sum_sym.*vec
+# 	chi_inv_coeff_dag = conj(chi_inv_coeff)
+# 	term1 = ((chi_inv_coeff_dag+chi_inv_coeff)/2)*P_sum_sym_vec_product
+# 	term2 = (P_sum_sym/2).*GAdjv_AA(gMemSlfN, cellsA, T)
+#     term3 = Gv_AA(gMemSlfA, cellsA, P_sum_sym_vec_product/2)
+# 	# term2 = GAdjv_AA(gMemSlfA, cellsA, P_sum_asym_T_product/2im)
+# 	# term3 = (P_sum_asym/2im).*Gv_AA(gMemSlfN, cellsA, T)
+# 	return term1-term2-term3
+
+
+# 	# G_Adjoint_AA_P_vect_product = GAdjv_AA(gMemSlfA, cellsA, P.*vec) # P*
+# 	# P_G_AA_vect_product = P.*Gv_AA(gMemSlfN, cellsA, vec)
+
+# 	# # print("size(vect)", size(vect), "\n")
+# 	# chi_inv_coeff_dag = conj(chi_inv_coeff)
+# 	# term_1 = chi_inv_coeff_dag*P_vec # *P 
+# 	# term_2 = G_Adjoint_AA_vect_product.*P # GAdjv_AA(gMemSlfA, cellsA, vec) # P*
+# 	# term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
+# 	# term_4 = G_AA_vect_product.*P # Gv_AA(gMemSlfN, cellsA, vec) # P*
+# 	# # print("size(term_1)", size(term_1), "\n")
+# 	# # print("size(term_2)", size(term_2), "\n")
+# 	# # print("term_3 " , term_3, "\n")
+# 	# return (term_1.-term_2.- term_4.+term_3)./2  
+# end
 
 # New sym and asym sum function: 
 function sym_and_asym_sum(l,l2,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, vec)	
@@ -192,27 +192,50 @@ function sym_and_asym_sum(l,l2,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, vec)
 	# doesn't seem like it would make much of a different but 
 	# doing something twice a lot of times kinda makes a big/huge difference.
 
-	for i in eachindex(total_LM) # Same as length(l)+length(l2)
-		sum_LM_P_vec_product = total_LM[i]*(P[i].*vec)
-	end 
+	P_sum_asym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+    # P sum asym
+    if length(l) > 0
+        for j in eachindex(l)
+            P_sum_asym += (l[j])*P[j]
+        end 
+    end 
+	# P sum sym
+	P_sum_sym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+	if length(l2) > 0
+        for j in eachindex(l)
+            P_sum_sym += (l2[j])*P[Int(length(l))+j]
+        end 
+    end 
+	P_sum_asym_vec_product = P_sum_asym.*vec
+	P_sum_sym_vec_product = P_sum_sym.*vec
+	chi_inv_coeff_dag = conj(chi_inv_coeff)
+	term1 = P_sum_asym_vec_product*((chi_inv_coeff_dag-chi_inv_coeff)/2im) + P_sum_sym_vec_product*((chi_inv_coeff_dag+chi_inv_coeff)/2)
+	term2 = -(P_sum_asym/2im+P_sum_sym/2).*GAdjv_AA(gMemSlfN, cellsA, vec)
+	term3 = Gv_AA(gMemSlfA, cellsA, P_sum_asym_vec_product/2im - P_sum_sym_vec_product/2)
+ 
+	return term1 + term2 + term3
+
+	# # for i in eachindex(total_LM) # Same as length(l)+length(l2)
+	# # 	sum_LM_P_vec_product = total_LM[i]*(P[i].*vec)
+	# # end 
 	
-	# The two following variables just need to be computed once and will be used 
-	# in the asym_vect and sym_vect functions. 
-	G_Adjoint_AA_P_vect_product = GAdjv_AA(gMemSlfA, cellsA, P.*vec) # P*
-	P_G_AA_vect_product = P.*Gv_AA(gMemSlfN, cellsA, vec)
-	# Asym 
-	if length(l) > 0
-        for i in eachindex(l)
-            val += (l[i])*asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, vec)
-        end 
-    end 
-	# Sym 
-    if length(l2) > 0
-        for j in eachindex(l2)
-            val += (l2[j])*sym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, vec)
-        end 
-    end 
-	return val 
+	# # The two following variables just need to be computed once and will be used 
+	# # in the asym_vect and sym_vect functions. 
+	# G_Adjoint_AA_P_vect_product = GAdjv_AA(gMemSlfA, cellsA, P.*vec) # P*
+	# P_G_AA_vect_product = P.*Gv_AA(gMemSlfN, cellsA, vec)
+	# # Asym 
+	# if length(l) > 0
+    #     for i in eachindex(l)
+    #         val += (l[i])*asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, vec)
+    #     end 
+    # end 
+	# # Sym 
+    # if length(l2) > 0
+    #     for j in eachindex(l2)
+    #         val += (l2[j])*sym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, vec)
+    #     end 
+    # end 
+	# return val 
 end 
 
 # Old sym and asym sum function
