@@ -13,7 +13,7 @@
 # l2[3]=1
 # print(l.*l2)
 
-using LinearAlgebra
+
 M = zeros(2,2,2,3)
 M[1:Int(2/2), 1:Int(2/2), 1:Int(2/2),:] .= 1.0
 P1 = diag(M)

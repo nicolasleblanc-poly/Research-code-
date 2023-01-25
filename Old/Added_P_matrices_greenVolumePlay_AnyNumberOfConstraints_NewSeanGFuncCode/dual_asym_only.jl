@@ -23,10 +23,8 @@ function c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # asymmetric p
     # Right term => Sym*T
     chi_inv_coeff_dag = conj(chi_inv_coeff)
     first_term = ((chi_inv_coeff_dag+chi_inv_coeff)/2im)*P_sum_asym_T_product
-    second_term = (P_sum_asym/2).*GAdjv_AA(gMemSlfN, cellsA, T)
-    third_term = Gv_AA(gMemSlfA, cellsA, P_sum_asym_T_product/2)
-    # second_term = GAdjv_AA(gMemSlfA, cellsA, P_sum_asym_T_product/2im)
-    # third_term = (P_sum_asym/2im).*Gv_AA(gMemSlfN, cellsA, T)
+    second_term = GAdjv_AA(gMemSlfA, cellsA, P_sum_asym_T_product/2)
+    third_term = (P_sum_asym/2im).*Gv_AA(gMemSlfN, cellsA, T)
     
     total_sum = I_EPT - conj.(transpose(T))*(first_term-second_term+third_term)
 
@@ -36,7 +34,7 @@ function c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # asymmetric p
     # TsymT = conj.(transpose(T))*symT
     # print("T_sym_T ", TsymT, "\n")
     # return real(I_EPT - TsymT)[1] 
-    return real(total_sum) # [1]
+    return real(total_sum)[1]
 
 
 
@@ -96,8 +94,8 @@ function c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # symmetric pa
     # Right term => Sym*T
     chi_inv_coeff_dag = conj(chi_inv_coeff)
     first_term = ((chi_inv_coeff_dag+chi_inv_coeff)/2)*P_sum_sym_T_product
-    second_term = (P_sum_sym/2).*GAdjv_AA(gMemSlfN, cellsA, T)
-    third_term = Gv_AA(gMemSlfA, cellsA, P_sum_sym_T_product/2)
+    second_term = GAdjv_AA(gMemSlfA, cellsA, P_sum_sym_T_product/2)
+    third_term = (P_sum_sym/2).*Gv_AA(gMemSlfN, cellsA, T)
     
     total_sum = I_EPT - conj.(transpose(T))*(first_term-second_term-third_term)
 
@@ -107,7 +105,7 @@ function c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # symmetric pa
     # TsymT = conj.(transpose(T))*symT
     # print("T_sym_T ", TsymT, "\n")
     # return real(I_EPT - TsymT)[1] 
-    return real(total_sum) # [1]
+    return real(total_sum)[1]
 end
 
 
@@ -129,33 +127,25 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     # When stabilized biconjugate gradient is used as the T solver 
     # T = bicgstab(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
    
-    # Start of new gradient for sym and asym cases code 
+   
     g = ones(Float64, length(l), 1)
     g2 = ones(Float64, length(l2), 1)
-    g = c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
-    g2 = c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
-
-    # End of new gradient for sym and asym cases code 
-
-    # Start  of old gradient for sym and asym cases code 
-    # # print("C1(T)", C1(T)[1], "\n")
-    # # print("C2(T)", C2(T)[1], "\n")
-    # if length(l)>0
-    #     print("Asym constraints only \n")
-    #     for i in eachindex(l)
-    #         g[i] = c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
-    #     end
-    #     print("g ", g, "\n")
-    # end 
-    # if length(l2)>0 
-    #     print("Sym constraints only \n")
-    #     for j in eachindex(l2)
-    #         g2[j] = c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
-    #     end 
-    #     print("g2 ", g2, "\n")
-    # end 
-    # End of old gradient for sym and asym cases code 
-
+    # print("C1(T)", C1(T)[1], "\n")
+    # print("C2(T)", C2(T)[1], "\n")
+    if length(l)>0
+        print("Asym constraints only \n")
+        for i in eachindex(l)
+            g[i] = c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
+        end
+        print("g ", g, "\n")
+    end 
+    if length(l2)>0 
+        print("Sym constraints only \n")
+        for j in eachindex(l2)
+            g2[j] = c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
+        end 
+        print("g2 ", g2, "\n")
+    end 
     # g[1] = c1(P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
 
     # print("ei ", ei, "\n")
@@ -170,7 +160,7 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     D = obj 
 
     if length(l)>0 
-        for i in range(1,length(l), step=1) 
+        for i in range(1,length(l), step=1)
             D += l[i]*g[i]
         end 
     end 
