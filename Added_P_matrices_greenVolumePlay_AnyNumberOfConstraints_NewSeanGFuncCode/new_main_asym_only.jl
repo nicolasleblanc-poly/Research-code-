@@ -23,7 +23,7 @@ println("MaxGTests initialized with ", nthreads(),
 # New Green function code start 
 # Define test volume, all lengths are defined relative to the wavelength. 
 # Number of cells in the volume. 
-cellsA = [2, 2, 2]
+cellsA = [4, 4, 4 ]
 cellsB = [1, 1, 1]
 # Edge lengths of a cell relative to the wavelength. 
 scaleA = (0.1, 0.1, 0.1)
@@ -153,74 +153,108 @@ Pdag = P
 # First baby cube: [1:cellsA[1]/2, 1:cellsA[2]/2, 1:cellsA[3]/2]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[1:Int(cellsA[1]/2), 1:Int(cellsA[2]/2), 1:Int(cellsA[3]/2),:] .= 1.0
-N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
+print("1:Int(cellsA[1]/2) ", 1:Int(cellsA[1]/2), "\n")
+print("1:Int(cellsA[2]/2) ", 1:Int(cellsA[2]/2), "\n")
+print("1:Int(cellsA[3]/2) ", 1:Int(cellsA[3]/2), "\n")
+P1 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+# N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
 # print("N ", N, "\n")
-N_diag = Diagonal(N)
-P1 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-P1[1:length(N_diag)] = N_diag[1:end] 
-# Diagonal only stores a value from N if its non-zero. 
-# test_vec = ones(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
-# print("P1 ", P1, "\n")
-# print("size(P1) ", size(P1), "\n")
-# print("test_vec ", test_vec, "\n")
+# N_diag = Diagonal(N)
+# P1 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
+# P1[1:length(N_diag)] = N_diag[1:end] 
+# # Diagonal only stores a value from N if its non-zero. 
+# # test_vec = ones(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+print("P1 ", P1, "\n")
+# # print("size(P1) ", size(P1), "\n")
+# # print("test_vec ", test_vec, "\n")
 # print("size(test_vec) ", size(test_vec), "\n")
 # print("P1*test_vec ", P1.*test_vec, "\n")
 
 # Second baby cube: [1:cellsA[1]/2, 1:cellsA[2]/2, cellsA[3]/2+1:end]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[1:Int(cellsA[1]/2), 1:Int(cellsA[2]/2), Int(cellsA[3]/2)+1:end,:] .= 1.0
-N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
-N_diag = Diagonal(N)
-P2 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-P2[1:length(N_diag)] = N_diag[1:end] 
+# print("1:Int(cellsA[1]/2) ", 1:Int(cellsA[1]/2), "\n")
+# print("1:Int(cellsA[2]/2) ", 1:Int(cellsA[2]/2), "\n")
+# print("1:Int(cellsA[3]/2) ", Int(cellsA[3]/2)+1:, "\n")
+P2 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+# N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
+# print("N ", N, "\n")
+# N_diag = Diagonal(N)
+# P2 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
+# P2[1:length(N_diag)] = N_diag[1:end] 
+print("P2 ", P2, "\n")
 
 # Third baby cube: [1:cellsA[1]/2, cellsA[2]/2+1:end, 1:cellsA[3]/2]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[1:Int(cellsA[1]/2), Int(cellsA[2]/2)+1:end, 1:Int(cellsA[3]/2),:] .= 1.0
-N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
-N_diag = Diagonal(N)
-P3 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-P3[1:length(N_diag)] = N_diag[1:end] 
+P3 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+# N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)print("N ", N, "\n")
+# print("N ", N, "\n")
+# N_diag = Diagonal(N)
+# P3 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
+# P3[1:length(N_diag)] = N_diag[1:end] 
+print("P3 ", P3, "\n")
 
 # Fourth baby cube: [1:cellsA[1]/2, cellsA[2]/2+1:end, cellsA[3]/2+1:end]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[1:Int(cellsA[1]/2), Int(cellsA[2]/2)+1:end, Int(cellsA[3]/2)+1:end,:] .= 1.0
-N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
-N_diag = Diagonal(N)
-P4 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-P4[1:length(N_diag)] = N_diag[1:end] 
+P4 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+# N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
+# print("N ", N, "\n")
+# N_diag = Diagonal(N)
+# P4 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
+# P4[1:length(N_diag)] = N_diag[1:end] 
+print("P4 ", P4, "\n")
 
 # Fifth baby cube: [cellsA[1]/2+1:end, 1:cellsA[2]/2, 1:cellsA[3]/2]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[Int(cellsA[1]/2)+1:end, 1:Int(cellsA[2]/2), 1:Int(cellsA[3]/2),:] .= 1.0
-N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
-N_diag = Diagonal(N)
-P5 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-P5[1:length(N_diag)] = N_diag[1:end] 
+P5 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+# N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
+# print("N ", N, "\n")
+# N_diag = Diagonal(N)
+# P5 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
+# P5[1:length(N_diag)] = N_diag[1:end] 
+print("P5 ", P5, "\n")
 
 # Sixth baby cube: [cellsA[1]/2+1:end, cellsA[2]/2+1:end, 1:cellsA[3]/2]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[Int(cellsA[1]/2)+1:end, Int(cellsA[2]/2)+1:end, 1:Int(cellsA[3]/2),:] .= 1.0
-N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
-N_diag = Diagonal(N)
-P6 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-P6[1:length(N_diag)] = N_diag[1:end] 
+P6 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+# N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
+# print("N ", N, "\n")
+# N_diag = Diagonal(N)
+# P6 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
+# P6[1:length(N_diag)] = N_diag[1:end] 
+print("P6 ", P6, "\n")
 
 # Seventh baby cube: [cellsA[1]/2+1:end, 1:cellsA[2]/2, cellsA[3]/2+1:end]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[Int(cellsA[1]/2)+1:end, 1:Int(cellsA[2]/2), Int(cellsA[3]/2)+1:end,:] .= 1.0
-N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
-N_diag = Diagonal(N)
-P7 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-P7[1:length(N_diag)] = N_diag[1:end] 
+P7 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+# N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
+# print("N ", N, "\n")
+# N_diag = Diagonal(N)
+# P7 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
+# P7[1:length(N_diag)] = N_diag[1:end]
+print("P7 ", P7, "\n") 
 
 # Eigth baby cube: [cellsA[1]/2+1:end, cellsA[2]/2+1:end, cellsA[3]/2+1:end]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[Int(cellsA[1]/2)+1:end, Int(cellsA[2]/2)+1:end, Int(cellsA[3]/2)+1:end,:] .= 1.0
-N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M))
-N_diag = Diagonal(N)
-P8 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-P8[1:length(N_diag)] = N_diag[1:end] 
+P8 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+# N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M))
+# print("N ", N, "\n")
+# N_diag = Diagonal(N)
+# print("N_diag ", N_diag, "\n")
+# P8 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
+# for i in eachindex(N_diag)
+# 	if N_diag[i] != 0.0
+# 		P8[i] = 1.0
+# 	end 
+# end 
+# # P8[1:length(N_diag)] = N_diag[1:end]
+print("P8 ", P8, "\n")
 
 
 # For simplicity, I'm going to say that the first constraints are asymmetric and the ones 
