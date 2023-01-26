@@ -4,8 +4,30 @@ using b_asym_only, gmres, product
 # Code to get the value of the objective and of the dual.
 # The code also calculates the constraints
 # and can return the gradient.
-function c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # asymmetric part 
-    # New code that might actually not work for what we need with the gradient...
+function c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,GAdj_T,i) # asymmetric part 
+    # OG code 
+    # Left term
+    # print("In c1 \n")
+    chi_inv_coeff_dag = conj(chi_inv_coeff)
+    PT = P[i].*T 
+    # first term
+    ei_tr = conj.(transpose(ei))
+    EPT=ei_tr*PT
+    I_EPT = imag(EPT) 
+    print("I_EPT ", I_EPT, "\n")
+    # second term 
+    term2 = conj.(transpose(T))*((chi_inv_coeff_dag-chi_inv_coeff)/2im)*PT
+    # third term 
+    term3 = conj.(transpose(T))*((P[i]/2im).*GAdj_T)
+    # fourth term 
+    term4 = (conj.(transpose(T)))Gv_AA(gMemSlfA, cellsA, PT/2im)
+    TasymT = I_EPT-(term2-term3+term4)
+    print("TasymT ", TasymT, "\n")
+    
+    return real(I_EPT - TasymT)[1] 
+
+
+     # New code that might actually not work for what we need with the gradient...
     # P_sum_asym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
     # # P sum
     # if length(l) > 0
@@ -39,108 +61,124 @@ function c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # asymmetric p
     # # return real(I_EPT - TsymT)[1] 
     # return real(total_sum) # [1]
 
-    # OG code 
-    # Left term
-    # print("In c1 \n")
-    PT = T  # P*
+    # PT = T  # P*
     # ei_tr = transpose(ei) # we have <ei^*| instead of <ei|
     # print("size(ei) ", size(ei), "\n")
     # print("size(T) ", size(T), "\n")
-    ei_tr = conj.(transpose(ei))
+    
 
     # print("l ", l, "\n")
 
-    print("T ", T, "\n")
+    # print("T ", T, "\n")
 
-    print("T-T inner product ", conj.(transpose(T))*T, "\n")
+    # print("T-T inner product ", conj.(transpose(T))*T, "\n")
 
 
-    EPT=ei_tr*PT
-    I_EPT = imag(EPT) 
-    print("I_EPT ", I_EPT, "\n")
+    
     # Right term => Asym*T
     # G|v> type calculation
 
     # print("l ", l, "\n")
 
-    asymT = asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, T)
-    # print("asymT ", asymT, "\n")
-    # output(l,T,fft_plan_x,fft_plan_y,fft_plan_z,inv_fft_plan_x,inv_fft_plan_y,inv_fft_plan_z,g_xx,g_xy,g_xz,g_yx,g_yy,g_yz,g_zx,g_zy,g_zz,cellsA)/l[1]
-    # print("asym_T", asym_T, "\n")
-    TasymT = conj.(transpose(T))*asymT
-    print("T_asym_T ", TasymT, "\n")
+    # asymT = asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, T)
+    # # print("asymT ", asymT, "\n")
+    # # output(l,T,fft_plan_x,fft_plan_y,fft_plan_z,inv_fft_plan_x,inv_fft_plan_y,inv_fft_plan_z,g_xx,g_xy,g_xz,g_yx,g_yy,g_yz,g_zx,g_zy,g_zz,cellsA)/l[1]
+    # # print("asym_T", asym_T, "\n")
+    # TasymT = conj.(transpose(T))*asymT
+    # print("T_asym_T ", TasymT, "\n")
     # print("I_EPT ", I_EPT,"\n")
     # print("T_asym_T ", T_asym_T,"\n")
     # print("I_EPT - T_chiGA_T",I_EPT - T_chiGA_T,"\n")
     # return real(I_EPT - T_asym_T[1]) # for the <ei^*| case
-    return real(I_EPT - TasymT)[1] 
+    # return real(I_EPT - TasymT)[1] 
 end
 
-function c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # symmetric part 
-    # New code that might actually not work for what we need with the gradient...
-#     P_sum_sym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
-#     # P sum
-#     if length(l2) > 0
-#         for j in eachindex(l2)
-#             P_sum_sym += (l2[j])*P[Int(length(l))+j]
-#         end 
-#     end 
-#     P_sum_sym_T_product = P_sum_sym.*T
-
-#     # Left term 
-#     ei_tr = conj.(transpose(ei))
-#     EPT=ei_tr*P_sum_sym_T_product
-#     I_EPT = real(EPT) 
-#     print("I_EPT ", I_EPT, "\n")
-
-#     # Right term => Sym*T
-#     chi_inv_coeff_dag = conj(chi_inv_coeff)
-#     first_term = ((chi_inv_coeff_dag+chi_inv_coeff)/2)*P_sum_sym_T_product
-#     second_term = (P_sum_sym/2).*GAdjv_AA(gMemSlfN, cellsA, T)
-#     third_term = Gv_AA(gMemSlfA, cellsA, P_sum_sym_T_product/2)
-    
-#     total_sum = I_EPT - conj.(transpose(T))*(first_term-second_term-third_term)
-
-
-#     # G|v> type calculation
-#     # symT = sym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, T)
-#     # TsymT = conj.(transpose(T))*symT
-#     # print("T_sym_T ", TsymT, "\n")
-#     # return real(I_EPT - TsymT)[1] 
-#     return real(total_sum) # [1]
-
+function c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,GAdj_T,j) # symmetric part 
     # OG code 
     # Left term
     # print("In c1 \n")
-    PT = T  # P*
-    # ei_tr = transpose(ei) # we have <ei^*| instead of <ei|\
-    # print("size(ei) ", size(ei), "\n")
-    # print("size(T) ", size(T), "\n")
+    chi_inv_coeff_dag = conj(chi_inv_coeff)
+    PT = P[j].*T 
+    # first term
     ei_tr = conj.(transpose(ei))
-    # print("T ", T, "\n")
-
-    # print("T-T inner product ", conj.(transpose(T))*T, "\n")
-
     EPT=ei_tr*PT
     I_EPT = real(EPT) 
     print("I_EPT ", I_EPT, "\n")
-    # Right term => asym*T
+    # second term 
+    term2 = conj.(transpose(T))*((chi_inv_coeff_dag-chi_inv_coeff)/2)*PT
+    # third term 
+    term3 = conj.(transpose(T))*((P[j]/2).*GAdj_T)
+    # fourth term 
+    term4 = (conj.(transpose(T)))Gv_AA(gMemSlfA, cellsA, PT/2)
+    TsymT = I_EPT-(term2-term3-term4)
+    print("TsymT ", TsymT, "\n")
     
-    # G|v> type calculation
-
-    # print("l ", l, "\n")
-
-    symT = sym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, T)
-    # print("asymT ", asymT, "\n")
-    # output(l,T,fft_plan_x,fft_plan_y,fft_plan_z,inv_fft_plan_x,inv_fft_plan_y,inv_fft_plan_z,g_xx,g_xy,g_xz,g_yx,g_yy,g_yz,g_zx,g_zy,g_zz,cellsA)/l[1]
-    # print("asym_T", asym_T, "\n")
-    TsymT = conj.(transpose(T))*symT
-    print("T_sym_T ", TsymT, "\n")
-    # print("I_EPT ", I_EPT,"\n")
-    # print("T_asym_T ", T_asym_T,"\n")
-    # print("I_EPT - T_chiGA_T",I_EPT - T_chiGA_T,"\n")
-    # return real(I_EPT - T_asym_T[1]) # for the <ei^*| case
     return real(I_EPT - TsymT)[1] 
+
+    #     # New code that might actually not work for what we need with the gradient...
+# #     P_sum_sym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+# #     # P sum
+# #     if length(l2) > 0
+# #         for j in eachindex(l2)
+# #             P_sum_sym += (l2[j])*P[Int(length(l))+j]
+# #         end 
+# #     end 
+# #     P_sum_sym_T_product = P_sum_sym.*T
+
+# #     # Left term 
+# #     ei_tr = conj.(transpose(ei))
+# #     EPT=ei_tr*P_sum_sym_T_product
+# #     I_EPT = real(EPT) 
+# #     print("I_EPT ", I_EPT, "\n")
+
+# #     # Right term => Sym*T
+# #     chi_inv_coeff_dag = conj(chi_inv_coeff)
+# #     first_term = ((chi_inv_coeff_dag+chi_inv_coeff)/2)*P_sum_sym_T_product
+# #     second_term = (P_sum_sym/2).*GAdjv_AA(gMemSlfN, cellsA, T)
+# #     third_term = Gv_AA(gMemSlfA, cellsA, P_sum_sym_T_product/2)
+    
+# #     total_sum = I_EPT - conj.(transpose(T))*(first_term-second_term-third_term)
+
+
+# #     # G|v> type calculation
+# #     # symT = sym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, T)
+# #     # TsymT = conj.(transpose(T))*symT
+# #     # print("T_sym_T ", TsymT, "\n")
+# #     # return real(I_EPT - TsymT)[1] 
+# #     return real(total_sum) # [1]
+
+#     # OG code 
+#     # Left term
+#     # print("In c1 \n")
+#     PT = T  # P*
+#     # ei_tr = transpose(ei) # we have <ei^*| instead of <ei|\
+#     # print("size(ei) ", size(ei), "\n")
+#     # print("size(T) ", size(T), "\n")
+#     ei_tr = conj.(transpose(ei))
+#     # print("T ", T, "\n")
+
+#     # print("T-T inner product ", conj.(transpose(T))*T, "\n")
+
+#     EPT=ei_tr*PT
+#     I_EPT = real(EPT) 
+#     print("I_EPT ", I_EPT, "\n")
+#     # Right term => asym*T
+    
+#     # G|v> type calculation
+
+#     # print("l ", l, "\n")
+
+#     symT = sym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, T)
+#     # print("asymT ", asymT, "\n")
+#     # output(l,T,fft_plan_x,fft_plan_y,fft_plan_z,inv_fft_plan_x,inv_fft_plan_y,inv_fft_plan_z,g_xx,g_xy,g_xz,g_yx,g_yy,g_yz,g_zx,g_zy,g_zz,cellsA)/l[1]
+#     # print("asym_T", asym_T, "\n")
+#     TsymT = conj.(transpose(T))*symT
+#     print("T_sym_T ", TsymT, "\n")
+#     # print("I_EPT ", I_EPT,"\n")
+#     # print("T_asym_T ", T_asym_T,"\n")
+#     # print("I_EPT - T_chiGA_T",I_EPT - T_chiGA_T,"\n")
+#     # return real(I_EPT - T_asym_T[1]) # for the <ei^*| case
+#     return real(I_EPT - TsymT)[1] 
 end
 
 
@@ -150,62 +188,51 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     print("l2 ", l2, "\n")
     print("b ", b, "\n")
     # l = [2] # initial Lagrange multipliers
+
+    P_sum_total = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+    # P su
+    for i in range(1,length(l)+length(l2))
+        P_sum_total += P[i]
+    end 
     
     # When GMRES is used as the T solver
     T = GMRES_with_restart(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
-    # When conjugate gradient is used as the T solver 
-    # T = cg(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
 
-    # When biconjugate gradient is used as the T solver 
-    # T = bicg(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+    Psum_T_product = P_sum_total.*T
 
-    # When stabilized biconjugate gradient is used as the T solver 
-    # T = bicgstab(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
-   
-    # Start of new gradient for sym and asym cases code 
-    # g = ones(Float64, length(l), 1)
-    # g2 = ones(Float64, length(l2), 1)
-    # g = c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
-    # g2 = c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
-    # grads = g+g2
-    # End of new gradient for sym and asym cases code 
-    # Never mind, we need to go back to the old code because we actually need 
-    # a vector containing the values of the gradient and not just the values 
+    # ei_tr = transpose(ei)
+    ei_tr = conj.(transpose(ei)) 
+    k0 = 2*pi
+    Z = 1
+    # I put the code below here since it is used no matter the lenght of fSlist
+    # ei_T=ei_tr*T
+    ei_P_T=ei_tr*Psum_T_product
+    obj = imag(ei_P_T)[1]  # this is just the objective part of the dual 0.5*(k0/Z)*
+    print("obj ", obj, "\n")
+    D = obj 
+    # Reminder: a gradient is just a constraint evaluated a |t>.
 
-    # Start  of old gradient for sym and asym cases code 
-    # print("C1(T)", C1(T)[1], "\n")
-    # print("C2(T)", C2(T)[1], "\n")
+    GAdj_T = GAdjv_AA(gMemSlfN, cellsA, T)
+
+    g = ones(Float64, length(l), 1)
+    g2 = ones(Float64, length(l2), 1)
+    # Calculation and storing of the gradients 
     if length(l)>0
         print("Asym constraints only \n")
         for i in eachindex(l)
-            g[i] = c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
+            g[i] = c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,GAdj_T,i)
         end
         print("g ", g, "\n")
     end 
     if length(l2)>0 
         print("Sym constraints only \n")
         for j in eachindex(l2)
-            g2[j] = c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
+            g2[j] = c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,GAdj_T,j)
         end 
         print("g2 ", g2, "\n")
     end 
-    # End of old gradient for sym and asym cases code 
 
-    # g[1] = c1(P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
-
-    # print("ei ", ei, "\n")
-    # ei_tr = transpose(ei)
-    ei_tr = conj.(transpose(ei)) 
-    k0 = 2*pi
-    Z = 1
-    # I put the code below here since it is used no matter the lenght of fSlist
-    ei_T=ei_tr*T
-    obj = imag(ei_T)[1]  # this is just the objective part of the dual 0.5*(k0/Z)*
-    print("obj ", obj, "\n")
-    D = obj 
-    # Reminder: a gradient is just a constraint evaluated a |t>.
-
-    # Old code to add gradients to the dual value 
+    # Code to add gradients to the dual value 
     if length(l)>0 
         for i in range(1,length(l), step=1) 
             D += l[i]*g[i]
@@ -217,9 +244,15 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
         end 
     end 
 
-    # This line would be for the new code where we sum the gradients since we sum the P's 
-    # D += g + g2 # g: sum of asym constraints and g2: sum of sym constraints
+    # When conjugate gradient is used as the T solver 
+    # T = cg(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
 
+    # When biconjugate gradient is used as the T solver 
+    # T = bicg(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+
+    # When stabilized biconjugate gradient is used as the T solver 
+    # T = bicgstab(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+    
     print("D after adding grad ", D, "\n")
     print(length(fSlist), "\n")
     if length(fSlist)>0
@@ -243,7 +276,7 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
         end
         D += fSval
     end
-    # gradient= vcat(g,g2) # Combine the sym and asym L mults into one list
+    gradient= vcat(g,g2) # Combine the sym and asym L mults into one list
 
     print("dual", D,"\n")
     # print("Done dual \n")
@@ -254,3 +287,30 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     end
 end
 end
+
+# Start of new gradient for sym and asym cases code 
+    # g = ones(Float64, length(l), 1)
+    # g2 = ones(Float64, length(l2), 1)
+    # g = c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
+    # g2 = c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
+    # grads = g+g2
+    # End of new gradient for sym and asym cases code 
+    # Never mind, we need to go back to the old code because we actually need 
+    # a vector containing the values of the gradient and not just the values 
+
+    # Start  of old gradient for sym and asym cases code 
+    # print("C1(T)", C1(T)[1], "\n")
+    # print("C2(T)", C2(T)[1], "\n")
+
+    
+    # End of old gradient for sym and asym cases code 
+
+    # g[1] = c1(P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff)
+
+    # print("ei ", ei, "\n")
+  
+
+    
+
+    # This line would be for the new code where we sum the gradients since we sum the P's 
+    # D += g + g2 # g: sum of asym constraints and g2: sum of sym constraints

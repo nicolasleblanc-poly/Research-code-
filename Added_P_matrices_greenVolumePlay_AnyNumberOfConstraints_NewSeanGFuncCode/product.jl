@@ -158,7 +158,7 @@ end
 # 	chi_inv_coeff_dag = conj(chi_inv_coeff)
 # 	term1 = ((chi_inv_coeff_dag+chi_inv_coeff)/2)*P_sum_sym_vec_product
 # 	term2 = (P_sum_sym/2).*GAdjv_AA(gMemSlfN, cellsA, T)
-#     term3 = Gv_AA(gMemSlfA, cellsA, P_sum_sym_vec_product/2)
+#   term3 = Gv_AA(gMemSlfA, cellsA, P_sum_sym_vec_product/2)
 # 	# term2 = GAdjv_AA(gMemSlfA, cellsA, P_sum_asym_T_product/2im)
 # 	# term3 = (P_sum_asym/2im).*Gv_AA(gMemSlfN, cellsA, T)
 # 	return term1-term2-term3
@@ -182,9 +182,9 @@ end
 # New sym and asym sum function: 
 function sym_and_asym_sum(l,l2,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, vec)	
 	# val = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3,1) 
-	val = zeros(ComplexF64,cellsA[1]*cellsA[2]*cellsA[3]*3,1)
-	sum_LM_P_vec_product = zeros(ComplexF64,cellsA[1]*cellsA[2]*cellsA[3]*3,1)
-	total_LM = vcat(l,l2) # Combine the sym and asym L mults into one list
+	# val = zeros(ComplexF64,cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+	# sum_LM_P_vec_product = zeros(ComplexF64,cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+	# total_LM = vcat(l,l2) # Combine the sym and asym L mults into one list
 	
 	# For 3 of the 4 terms in sym and in asym, there is a P|v> product. 
 	# We can therefore just compute this product once for each P. This 
