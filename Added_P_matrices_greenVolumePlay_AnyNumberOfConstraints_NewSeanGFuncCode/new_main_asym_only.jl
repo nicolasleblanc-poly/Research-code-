@@ -23,7 +23,7 @@ println("MaxGTests initialized with ", nthreads(),
 # New Green function code start 
 # Define test volume, all lengths are defined relative to the wavelength. 
 # Number of cells in the volume. 
-cellsA = [4, 4, 4 ]
+cellsA = [2,2,2]
 cellsB = [1, 1, 1]
 # Edge lengths of a cell relative to the wavelength. 
 scaleA = (0.1, 0.1, 0.1)
@@ -151,12 +151,19 @@ Pdag = P
 # constraints instead of 8. We could also do this for a depth of 3, where we could have 
 # 512 constraints, which is kinda getting extreme but nonetheless pertinent. 
 # First baby cube: [1:cellsA[1]/2, 1:cellsA[2]/2, 1:cellsA[3]/2]
+
+# 0th P. This P is the complex identity matrix and it is considered because it assures 
+# duality when using one asym constraint. 
+
+
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[1:Int(cellsA[1]/2), 1:Int(cellsA[2]/2), 1:Int(cellsA[3]/2),:] .= 1.0
 print("1:Int(cellsA[1]/2) ", 1:Int(cellsA[1]/2), "\n")
 print("1:Int(cellsA[2]/2) ", 1:Int(cellsA[2]/2), "\n")
 print("1:Int(cellsA[3]/2) ", 1:Int(cellsA[3]/2), "\n")
-P1 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+P1 = Diagonal(N)
+# P1 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
 # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
 # print("N ", N, "\n")
 # N_diag = Diagonal(N)
@@ -176,7 +183,9 @@ M[1:Int(cellsA[1]/2), 1:Int(cellsA[2]/2), Int(cellsA[3]/2)+1:end,:] .= 1.0
 # print("1:Int(cellsA[1]/2) ", 1:Int(cellsA[1]/2), "\n")
 # print("1:Int(cellsA[2]/2) ", 1:Int(cellsA[2]/2), "\n")
 # print("1:Int(cellsA[3]/2) ", Int(cellsA[3]/2)+1:, "\n")
-P2 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+P2 = Diagonal(N)
+# P2 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
 # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
 # print("N ", N, "\n")
 # N_diag = Diagonal(N)
@@ -187,7 +196,9 @@ print("P2 ", P2, "\n")
 # Third baby cube: [1:cellsA[1]/2, cellsA[2]/2+1:end, 1:cellsA[3]/2]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[1:Int(cellsA[1]/2), Int(cellsA[2]/2)+1:end, 1:Int(cellsA[3]/2),:] .= 1.0
-P3 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+P3 = Diagonal(N)
+# P3 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
 # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)print("N ", N, "\n")
 # print("N ", N, "\n")
 # N_diag = Diagonal(N)
@@ -198,7 +209,9 @@ print("P3 ", P3, "\n")
 # Fourth baby cube: [1:cellsA[1]/2, cellsA[2]/2+1:end, cellsA[3]/2+1:end]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[1:Int(cellsA[1]/2), Int(cellsA[2]/2)+1:end, Int(cellsA[3]/2)+1:end,:] .= 1.0
-P4 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+P4 = Diagonal(N)
+# P4 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
 # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
 # print("N ", N, "\n")
 # N_diag = Diagonal(N)
@@ -209,7 +222,9 @@ print("P4 ", P4, "\n")
 # Fifth baby cube: [cellsA[1]/2+1:end, 1:cellsA[2]/2, 1:cellsA[3]/2]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[Int(cellsA[1]/2)+1:end, 1:Int(cellsA[2]/2), 1:Int(cellsA[3]/2),:] .= 1.0
-P5 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+P5 = Diagonal(N)
+# P5 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
 # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
 # print("N ", N, "\n")
 # N_diag = Diagonal(N)
@@ -220,7 +235,9 @@ print("P5 ", P5, "\n")
 # Sixth baby cube: [cellsA[1]/2+1:end, cellsA[2]/2+1:end, 1:cellsA[3]/2]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[Int(cellsA[1]/2)+1:end, Int(cellsA[2]/2)+1:end, 1:Int(cellsA[3]/2),:] .= 1.0
-P6 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+P6 = Diagonal(N)
+# P6 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
 # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
 # print("N ", N, "\n")
 # N_diag = Diagonal(N)
@@ -231,7 +248,9 @@ print("P6 ", P6, "\n")
 # Seventh baby cube: [cellsA[1]/2+1:end, 1:cellsA[2]/2, cellsA[3]/2+1:end]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[Int(cellsA[1]/2)+1:end, 1:Int(cellsA[2]/2), Int(cellsA[3]/2)+1:end,:] .= 1.0
-P7 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
+N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+P7 = Diagonal(N)
+# P7 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
 # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
 # print("N ", N, "\n")
 # N_diag = Diagonal(N)
@@ -242,8 +261,9 @@ print("P7 ", P7, "\n")
 # Eigth baby cube: [cellsA[1]/2+1:end, cellsA[2]/2+1:end, cellsA[3]/2+1:end]
 M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
 M[Int(cellsA[1]/2)+1:end, Int(cellsA[2]/2)+1:end, Int(cellsA[3]/2)+1:end,:] .= 1.0
-P8 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
-# N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M))
+N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+P8 = Diagonal(N)
+# N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3)) # diag(M))
 # print("N ", N, "\n")
 # N_diag = Diagonal(N)
 # print("N_diag ", N_diag, "\n")

@@ -181,7 +181,9 @@ function c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,GAdj_T,j) # sym
 #     return real(I_EPT - TsymT)[1] 
 end
 
-
+# Code for the dual value calculation without using the gradient. The 
+# gradient is still just calculated because it is needed for BFGS. If 
+# another method is used, we wouldn't need the gradient. 
 function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_grad)
     b = bv_asym_only(ei, l, l2, P) 
     print("l ", l, "\n")
@@ -189,16 +191,33 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     print("b ", b, "\n")
     # l = [2] # initial Lagrange multipliers
 
-    P_sum_total = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
-    # P su
-    for i in range(1,length(l)+length(l2))
-        P_sum_total += P[i]
+
+    P_sum_asym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+    # P sum asym
+    if length(l) > 0
+        for j in eachindex(l)
+            P_sum_asym += (l[j])*P[j]
+        end 
     end 
+	# P sum sym
+	P_sum_sym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+	if length(l2) > 0
+        for j in eachindex(l)
+            P_sum_sym += (l2[j])*P[Int(length(l))+j]
+        end 
+    end 
+    P_sum = P_sum_asym + P_sum_sym
+
+    # P_sum_total = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+    # # P su
+    # for i in range(1,length(l)+length(l2))
+    #     P_sum_total += P[i]
+    # end 
     
     # When GMRES is used as the T solver
     T = GMRES_with_restart(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
 
-    Psum_T_product = P_sum_total.*T
+    # Psum_T_product = P_sum_total.*T
 
     # ei_tr = transpose(ei)
     ei_tr = conj.(transpose(ei)) 
@@ -206,10 +225,18 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     Z = 1
     # I put the code below here since it is used no matter the lenght of fSlist
     # ei_T=ei_tr*T
-    ei_P_T=ei_tr*Psum_T_product
-    obj = imag(ei_P_T)[1]  # this is just the objective part of the dual 0.5*(k0/Z)*
-    print("obj ", obj, "\n")
-    D = obj 
+
+    # To get the just the dual value if we don't need the gradients, 
+    # we just need to calculate D = (1/4)*Re{<s_lambda|T>} 
+    # where |s_lambda> = lambda_j P_j |e_i>
+
+    s_lambda = P_sum*ei
+    D = (1/4)*real(conj.(tranpose(s_lambda))*T)
+
+    # ei_P_T=ei_tr*Psum_T_product
+    # obj = imag(ei_P_T)[1]  # this is just the objective part of the dual 0.5*(k0/Z)*
+    # print("obj ", obj, "\n")
+    # D = obj 
     # Reminder: a gradient is just a constraint evaluated a |t>.
 
     GAdj_T = GAdjv_AA(gMemSlfN, cellsA, T)
@@ -232,17 +259,18 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
         print("g2 ", g2, "\n")
     end 
 
-    # Code to add gradients to the dual value 
-    if length(l)>0 
-        for i in range(1,length(l), step=1) 
-            D += l[i]*g[i]
-        end 
-    end 
-    if length(l2)>0 
-        for j in range(1,length(l2), step=1)
-            D += l2[j]*g2[j]
-        end 
-    end 
+    # # Code to add gradients to the dual value 
+    # if length(l)>0 
+    #     for i in range(1,length(l), step=1) 
+    #         D += l[i]*g[i]
+    #     end 
+    # end 
+    # if length(l2)>0 
+    #     for j in range(1,length(l2), step=1)
+    #         D += l2[j]*g2[j]
+    #     end 
+    # end 
+
 
     # When conjugate gradient is used as the T solver 
     # T = cg(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
@@ -253,7 +281,7 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     # When stabilized biconjugate gradient is used as the T solver 
     # T = bicgstab(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
     
-    print("D after adding grad ", D, "\n")
+    # print("D after adding grad ", D, "\n")
     print(length(fSlist), "\n")
     if length(fSlist)>0
         print("In fSlist loop \n")
@@ -287,6 +315,123 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     end
 end
 end
+
+# This is the code for the dual value calculation when we just the gradients times
+# the multiplier values. 
+# function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_grad)
+#     b = bv_asym_only(ei, l, l2, P) 
+#     print("l ", l, "\n")
+#     print("l2 ", l2, "\n")
+#     print("b ", b, "\n")
+#     # l = [2] # initial Lagrange multipliers
+
+#     P_sum_total = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+#     # P su
+#     for i in range(1,length(l)+length(l2))
+#         P_sum_total += P[i]
+#     end 
+    
+#     # When GMRES is used as the T solver
+#     T = GMRES_with_restart(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+
+#     Psum_T_product = P_sum_total.*T
+
+#     # ei_tr = transpose(ei)
+#     ei_tr = conj.(transpose(ei)) 
+#     k0 = 2*pi
+#     Z = 1
+#     # I put the code below here since it is used no matter the lenght of fSlist
+#     # ei_T=ei_tr*T
+#     ei_P_T=ei_tr*Psum_T_product
+#     obj = imag(ei_P_T)[1]  # this is just the objective part of the dual 0.5*(k0/Z)*
+#     print("obj ", obj, "\n")
+#     D = obj 
+#     # Reminder: a gradient is just a constraint evaluated a |t>.
+
+#     GAdj_T = GAdjv_AA(gMemSlfN, cellsA, T)
+
+#     g = ones(Float64, length(l), 1)
+#     g2 = ones(Float64, length(l2), 1)
+#     # Calculation and storing of the gradients 
+#     if length(l)>0
+#         print("Asym constraints only \n")
+#         for i in eachindex(l)
+#             g[i] = c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,GAdj_T,i)
+#         end
+#         print("g ", g, "\n")
+#     end 
+#     if length(l2)>0 
+#         print("Sym constraints only \n")
+#         for j in eachindex(l2)
+#             g2[j] = c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,GAdj_T,j)
+#         end 
+#         print("g2 ", g2, "\n")
+#     end 
+
+#     # Code to add gradients to the dual value 
+#     if length(l)>0 
+#         for i in range(1,length(l), step=1) 
+#             D += l[i]*g[i]
+#         end 
+#     end 
+#     if length(l2)>0 
+#         for j in range(1,length(l2), step=1)
+#             D += l2[j]*g2[j]
+#         end 
+#     end 
+
+#     # To get the just the dual value if we don't need the gradients, 
+#     # we just need to calculate D = (1/4)*Re{<s_lambda|T>} 
+#     # where |s_lambda> = lambda_i P_i |e_i>
+    
+
+
+#     # When conjugate gradient is used as the T solver 
+#     # T = cg(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+
+#     # When biconjugate gradient is used as the T solver 
+#     # T = bicg(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+
+#     # When stabilized biconjugate gradient is used as the T solver 
+#     # T = bicgstab(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
+    
+#     print("D after adding grad ", D, "\n")
+#     print(length(fSlist), "\n")
+#     if length(fSlist)>0
+#         print("In fSlist loop \n")
+#         fSval = 0
+#         for k in fSlist
+#             prod_k = sym_and_asym_sum(l,l2,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, k)
+#             # Asym_k = asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, k)
+#             # Sym_k = sym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, k)
+#             k_tr = conj.(transpose(k)) 
+#             # kAsymk = l[1]*k_tr*Asym_k
+#             # kSymk = l[2]*k_tr*Sym_k
+#             k_prod_k = k_tr*prod_k
+#             fSval += real(k_prod_k[1])
+#             # fSval += real(kAsymk[1]+kSymk[1])
+
+#             # A_k = asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, k)
+#             # k_tr = conj.(transpose(k)) 
+#             # kAk=k_tr*A_k
+#             # fSval += real(kAk[1])
+#         end
+#         D += fSval
+#     end
+#     gradient= vcat(g,g2) # Combine the sym and asym L mults into one list
+
+#     print("dual", D,"\n")
+#     # print("Done dual \n")
+#     if get_grad == true
+#         return real(D[1]), gradient, real(obj) 
+#     elseif get_grad == false
+#         return real(D[1]), real(obj) 
+#     end
+# end
+
+
+
+
 
 # Start of new gradient for sym and asym cases code 
     # g = ones(Float64, length(l), 1)
