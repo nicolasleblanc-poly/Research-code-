@@ -1,3 +1,5 @@
+module opt_setup 
+export Ps, L_mults
 using LinearAlgebra, LinearAlgebra.BLAS, Distributed, FFTW, Cubature, 
 Base.Threads, FastGaussQuadrature, MaxGStructs, MaxGCirc, MaxGBasisIntegrals, 
 MaxGOpr, Printf, MaxGParallelUtilities, MaxGCUDA, Random, 
@@ -28,9 +30,9 @@ product, bfgs_power_iteration_asym_only, dual_asym_only, gmres
 # duality when using one asym constraint. 
 
 
-function Ps()
+function Ps(cellsA, nb_complex_P, nb_real_P)
     M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
-    M[1:Int(cellsA[1]/2), 1:Int(cellsA[2]/2), 1:Int(cellsA[3]/2),:] .= 1.0
+    M[1:Int(cellsA[1]/2), 1:Int(cellsA[2]/2), 1:Int(cellsA[3]/2),:] .= 1.0im
     print("1:Int(cellsA[1]/2) ", 1:Int(cellsA[1]/2), "\n")
     print("1:Int(cellsA[2]/2) ", 1:Int(cellsA[2]/2), "\n")
     print("1:Int(cellsA[3]/2) ", 1:Int(cellsA[3]/2), "\n")
@@ -52,7 +54,7 @@ function Ps()
 
     # Second baby cube: [1:cellsA[1]/2, 1:cellsA[2]/2, cellsA[3]/2+1:end]
     M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
-    M[1:Int(cellsA[1]/2), 1:Int(cellsA[2]/2), Int(cellsA[3]/2)+1:end,:] .= 1.0
+    M[1:Int(cellsA[1]/2), 1:Int(cellsA[2]/2), Int(cellsA[3]/2)+1:end,:] .= 1.0im
     # print("1:Int(cellsA[1]/2) ", 1:Int(cellsA[1]/2), "\n")
     # print("1:Int(cellsA[2]/2) ", 1:Int(cellsA[2]/2), "\n")
     # print("1:Int(cellsA[3]/2) ", Int(cellsA[3]/2)+1:, "\n")
@@ -68,7 +70,7 @@ function Ps()
 
     # Third baby cube: [1:cellsA[1]/2, cellsA[2]/2+1:end, 1:cellsA[3]/2]
     M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
-    M[1:Int(cellsA[1]/2), Int(cellsA[2]/2)+1:end, 1:Int(cellsA[3]/2),:] .= 1.0
+    M[1:Int(cellsA[1]/2), Int(cellsA[2]/2)+1:end, 1:Int(cellsA[3]/2),:] .= 1.0im
     N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
     P3 = Diagonal(N)
     # P3 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
@@ -81,7 +83,7 @@ function Ps()
 
     # Fourth baby cube: [1:cellsA[1]/2, cellsA[2]/2+1:end, cellsA[3]/2+1:end]
     M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
-    M[1:Int(cellsA[1]/2), Int(cellsA[2]/2)+1:end, Int(cellsA[3]/2)+1:end,:] .= 1.0
+    M[1:Int(cellsA[1]/2), Int(cellsA[2]/2)+1:end, Int(cellsA[3]/2)+1:end,:] .= 1.0im
     N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
     P4 = Diagonal(N)
     # P4 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
@@ -154,42 +156,22 @@ function Ps()
     # after are symmetric 
     P = [P1,P2,P3,P4,P5,P6,P7,P8]
     # Is P always real? -> No 
-    return P 
+
+
+    multipliers = L_mults(nb_complex_P,nb_real_P)
+
+    return P, multipliers 
 end 
 
-
-
-number_asym_constraints = 4
-number_sym_constraints = 4
-l = Array{ComplexF64}(undef, number_asym_constraints,1) # L mults related to asym constraints 
-l2 = Array{ComplexF64}(undef, number_sym_constraints, 1) # L mults related to sym constraints
-# Let's attribute random starting Lagrange multipliers that are between 0 and 3 (kinda 
-# arbitrary but we know the L mults are generally small)
-rand!(l,(0.01:3))
-rand!(l2,(0.01:3))
-
-# End of new code for generating P's and then Lagrange multipliers 
-
-# This is the code for the main function call using bfgs with the power iteration
-# method to solve for the Lagrange multiplier and gmres to solve for |T>.
-# # Start 
-bfgs = BFGS_fakeS_with_restart_pi(gMemSlfN,gMemSlfA,l,l2,dual,P,chi_inv_coeff,ei,
-cellsA,validityfunc,power_iteration_second_evaluation)
-# the BFGS_fakeS_with_restart_pi function can be found in the bfgs_power_iteration_asym_only file
-dof = bfgs[1]
-grad = bfgs[2]
-dualval = bfgs[3]
-objval = bfgs[4]
-print("dof ", dof, "\n")
-print("grad ", grad, "\n")
-print("dualval ", dualval, "\n")
-print("objval ", objval, "\n")
-# End 
-
-
-# ITEM call code 
-# item = ITEM(gMemSlfN, gMemSlfA,l,dual,P,chi_inv_coeff,ei,cellsA,validityfunc) 
-# print("dof ", item[1], "\n")
-# print("grad ", item[2], "\n")
-# print("dualval ", item[3], "\n")
-# print("objval ", item[4], "\n")
+function L_mults(nb_complex_P,nb_real_P)
+    # number_asym_constraints = 4
+    # number_sym_constraints = 4
+    l = Array{ComplexF64}(undef, nb_complex_P,1) # L mults related to asym constraints 
+    l2 = Array{ComplexF64}(undef, nb_real_P, 1) # L mults related to sym constraints
+    # Let's attribute random starting Lagrange multipliers that are between 0 and 3 (kinda 
+    # arbitrary but we know the L mults are generally small)
+    rand!(l,(0.01:3))
+    rand!(l2,(0.01:3))
+    return l, l2
+end 
+end 
