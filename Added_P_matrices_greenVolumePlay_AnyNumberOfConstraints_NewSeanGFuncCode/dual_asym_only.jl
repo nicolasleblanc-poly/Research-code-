@@ -9,7 +9,12 @@ function c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,GAdj_T,i) # asy
     # Left term
     # print("In c1 \n")
     chi_inv_coeff_dag = conj(chi_inv_coeff)
-    PT = P[i].*T 
+    if length(P) > 1
+        PT = P[1][i]*T 
+    else
+        PT = P[i]*T 
+    end
+    # PT = P[1][i]*T 
     # first term
     ei_tr = conj.(transpose(ei))
     EPT=ei_tr*PT
@@ -18,9 +23,15 @@ function c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,GAdj_T,i) # asy
     # second term 
     term2 = conj.(transpose(T))*((chi_inv_coeff_dag-chi_inv_coeff)/2im)*PT
     # third term 
-    term3 = conj.(transpose(T))*((P[i]/2im).*GAdj_T)
+    # term3 = 0
+    if length(P) > 1
+        term3 = conj.(transpose(T))*((P[1][i]/2im)*GAdj_T)
+    else
+        term3 = conj.(transpose(T))*((P[i]/2im)*GAdj_T)
+    end
+    # term3 = conj.(transpose(T))*((P[1][i]/2im)*GAdj_T)
     # fourth term 
-    term4 = (conj.(transpose(T)))Gv_AA(gMemSlfA, cellsA, PT/2im)
+    term4 = (conj.(transpose(T)))*Gv_AA(gMemSlfA, cellsA, PT/2im)
     TasymT = I_EPT-(term2-term3+term4)
     print("TasymT ", TasymT, "\n")
     
@@ -98,7 +109,12 @@ function c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,GAdj_T,j) # sym
     # Left term
     # print("In c1 \n")
     chi_inv_coeff_dag = conj(chi_inv_coeff)
-    PT = P[j].*T 
+    if length(P) > 1
+        PT = P[1][j]*T 
+    else
+        PT = P[j]*T 
+    end
+    # PT = P[1][j]*T 
     # first term
     ei_tr = conj.(transpose(ei))
     EPT=ei_tr*PT
@@ -107,9 +123,14 @@ function c2(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,GAdj_T,j) # sym
     # second term 
     term2 = conj.(transpose(T))*((chi_inv_coeff_dag-chi_inv_coeff)/2)*PT
     # third term 
-    term3 = conj.(transpose(T))*((P[j]/2).*GAdj_T)
+    if length(P) > 1
+        term3 = conj.(transpose(T))*((P[1][j]/2)*GAdj_T)
+    else
+        term3 = conj.(transpose(T))*((P[j]/2)*GAdj_T)
+    end
+    # term3 = conj.(transpose(T))*((P[1][j]/2)*GAdj_T)
     # fourth term 
-    term4 = (conj.(transpose(T)))Gv_AA(gMemSlfA, cellsA, PT/2)
+    term4 = (conj.(transpose(T)))*Gv_AA(gMemSlfA, cellsA, PT/2)
     TsymT = I_EPT-(term2-term3-term4)
     print("TsymT ", TsymT, "\n")
     
@@ -189,21 +210,36 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     print("l ", l, "\n")
     print("l2 ", l2, "\n")
     print("b ", b, "\n")
+    print("size(b) ", size(b), "\n")
     # l = [2] # initial Lagrange multipliers
 
 
-    P_sum_asym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+    P_sum_asym = zeros(ComplexF64, cellsA[1]*cellsA[2]*cellsA[3]*3,cellsA[1]*cellsA[2]*cellsA[3]*3)
+    # print("size(P_sum_asym) ", size(P_sum_asym), "\n")
     # P sum asym
+    # print("P[1][1] ", P[1][1], "\n")
+    # print("size(P[1][1]) ", size(P[1][1]), "\n")
+    print("length(P) ", length(P), "\n")
     if length(l) > 0
         for j in eachindex(l)
-            P_sum_asym += (l[j])*P[j]
+            if length(P) > 1
+				P_sum_asym += (l[j])*P[1][j]
+			else
+				P_sum_asym += (l[j])*P[j]
+			end
+            # P_sum_asym .+= (l[j])*P[1][j]
         end 
-    end 
+    end  
 	# P sum sym
-	P_sum_sym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+	P_sum_sym = zeros(ComplexF64, cellsA[1]*cellsA[2]*cellsA[3]*3,cellsA[1]*cellsA[2]*cellsA[3]*3)
 	if length(l2) > 0
         for j in eachindex(l)
-            P_sum_sym += (l2[j])*P[Int(length(l))+j]
+            if length(P) > 1
+				P_sum_sym += (l2[j])*P[1][Int(length(l))+j]
+			else
+				P_sum_sym += (l2[j])*P[Int(length(l))+j]
+			end
+            # P_sum_sym += (l2[j])*P[1][Int(length(l))+j]
         end 
     end 
     P_sum = P_sum_asym + P_sum_sym
@@ -231,7 +267,9 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     # where |s_lambda> = lambda_j P_j |e_i>
 
     s_lambda = P_sum*ei
-    D = (1/4)*real(conj.(tranpose(s_lambda))*T)
+    obj = (1/4)*real(conj.(transpose(s_lambda))*T)
+    D = obj[1]
+    print("obj ", obj,"\n")
 
     # ei_P_T=ei_tr*Psum_T_product
     # obj = imag(ei_P_T)[1]  # this is just the objective part of the dual 0.5*(k0/Z)*
@@ -306,7 +344,7 @@ function dual(l,l2,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     end
     gradient= vcat(g,g2) # Combine the sym and asym L mults into one list
 
-    print("dual", D,"\n")
+    print("dual ", D,"\n")
     # print("Done dual \n")
     if get_grad == true
         return real(D[1]), gradient, real(obj) 

@@ -31,133 +31,97 @@ product, bfgs_power_iteration_asym_only, dual_asym_only, gmres
 
 
 function Ps(cellsA, nb_complex_P, nb_real_P)
-    M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
-    M[1:Int(cellsA[1]/2), 1:Int(cellsA[2]/2), 1:Int(cellsA[3]/2),:] .= 1.0im
-    print("1:Int(cellsA[1]/2) ", 1:Int(cellsA[1]/2), "\n")
-    print("1:Int(cellsA[2]/2) ", 1:Int(cellsA[2]/2), "\n")
-    print("1:Int(cellsA[3]/2) ", 1:Int(cellsA[3]/2), "\n")
+    # P = []
+    # The first P is always the asym only constraint and it is
+    # the complex identity matrix. 
+    M = ones(ComplexF64,cellsA[1],cellsA[2],cellsA[3],3)
+    # M[:, :, :,:] .= 1.0im
     N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
-    P1 = Diagonal(N)
-    # P1 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
-    # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
-    # print("N ", N, "\n")
-    # N_diag = Diagonal(N)
-    # P1 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-    # P1[1:length(N_diag)] = N_diag[1:end] 
-    # # Diagonal only stores a value from N if its non-zero. 
-    # # test_vec = ones(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
-    print("P1 ", P1, "\n")
-    # # print("size(P1) ", size(P1), "\n")
-    # # print("test_vec ", test_vec, "\n")
-    # print("size(test_vec) ", size(test_vec), "\n")
-    # print("P1*test_vec ", P1.*test_vec, "\n")
+    P0 = Diagonal(N)
+    print("P0 ", P0, "\n")
 
-    # Second baby cube: [1:cellsA[1]/2, 1:cellsA[2]/2, cellsA[3]/2+1:end]
-    M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
-    M[1:Int(cellsA[1]/2), 1:Int(cellsA[2]/2), Int(cellsA[3]/2)+1:end,:] .= 1.0im
-    # print("1:Int(cellsA[1]/2) ", 1:Int(cellsA[1]/2), "\n")
-    # print("1:Int(cellsA[2]/2) ", 1:Int(cellsA[2]/2), "\n")
-    # print("1:Int(cellsA[3]/2) ", Int(cellsA[3]/2)+1:, "\n")
-    N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
-    P2 = Diagonal(N)
-    # P2 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
-    # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
-    # print("N ", N, "\n")
-    # N_diag = Diagonal(N)
-    # P2 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-    # P2[1:length(N_diag)] = N_diag[1:end] 
-    print("P2 ", P2, "\n")
+    print("nb_complex_P ", nb_complex_P, "\n")
+    print("nb_complex_P ", nb_complex_P, "\n")
 
-    # Third baby cube: [1:cellsA[1]/2, cellsA[2]/2+1:end, 1:cellsA[3]/2]
-    M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
-    M[1:Int(cellsA[1]/2), Int(cellsA[2]/2)+1:end, 1:Int(cellsA[3]/2),:] .= 1.0im
-    N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
-    P3 = Diagonal(N)
-    # P3 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
-    # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)print("N ", N, "\n")
-    # print("N ", N, "\n")
-    # N_diag = Diagonal(N)
-    # P3 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-    # P3[1:length(N_diag)] = N_diag[1:end] 
-    print("P3 ", P3, "\n")
+    if nb_complex_P > 1
+        # First baby cube [1:cellsA[1]/2, 1:cellsA[2]/2, cellsA[3]/2+1:end]
+        M = zeros(ComplexF64,cellsA[1],cellsA[2],cellsA[3],3)
+        M[1:Int(cellsA[1]/2), 1:Int(cellsA[2]/2), 1:Int(cellsA[3]/2),:] .= 1.0im
+        N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+        P1 = Diagonal(N)
+        print("P1 ", P1, "\n")
 
-    # Fourth baby cube: [1:cellsA[1]/2, cellsA[2]/2+1:end, cellsA[3]/2+1:end]
-    M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
-    M[1:Int(cellsA[1]/2), Int(cellsA[2]/2)+1:end, Int(cellsA[3]/2)+1:end,:] .= 1.0im
-    N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
-    P4 = Diagonal(N)
-    # P4 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
-    # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
-    # print("N ", N, "\n")
-    # N_diag = Diagonal(N)
-    # P4 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-    # P4[1:length(N_diag)] = N_diag[1:end] 
-    print("P4 ", P4, "\n")
+        # Second baby cube: [1:cellsA[1]/2, 1:cellsA[2]/2, cellsA[3]/2+1:end]
+        M = zeros(ComplexF64,cellsA[1],cellsA[2],cellsA[3],3)
+        M[1:Int(cellsA[1]/2), 1:Int(cellsA[2]/2), Int(cellsA[3]/2)+1:end,:] .= 1.0im
+        N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+        P2 = Diagonal(N)
+        print("P2 ", P2, "\n")
 
-    # Fifth baby cube: [cellsA[1]/2+1:end, 1:cellsA[2]/2, 1:cellsA[3]/2]
-    M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
-    M[Int(cellsA[1]/2)+1:end, 1:Int(cellsA[2]/2), 1:Int(cellsA[3]/2),:] .= 1.0
-    N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
-    P5 = Diagonal(N)
-    # P5 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
-    # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
-    # print("N ", N, "\n")
-    # N_diag = Diagonal(N)
-    # P5 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-    # P5[1:length(N_diag)] = N_diag[1:end] 
-    print("P5 ", P5, "\n")
+        # Third baby cube: [1:cellsA[1]/2, cellsA[2]/2+1:end, 1:cellsA[3]/2]
+        M = zeros(ComplexF64,cellsA[1],cellsA[2],cellsA[3],3)
+        M[1:Int(cellsA[1]/2), Int(cellsA[2]/2)+1:end, 1:Int(cellsA[3]/2),:] .= 1.0im
+        N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+        P3 = Diagonal(N)
+        print("P3 ", P3, "\n")
 
-    # Sixth baby cube: [cellsA[1]/2+1:end, cellsA[2]/2+1:end, 1:cellsA[3]/2]
-    M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
-    M[Int(cellsA[1]/2)+1:end, Int(cellsA[2]/2)+1:end, 1:Int(cellsA[3]/2),:] .= 1.0
-    N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
-    P6 = Diagonal(N)
-    # P6 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
-    # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
-    # print("N ", N, "\n")
-    # N_diag = Diagonal(N)
-    # P6 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-    # P6[1:length(N_diag)] = N_diag[1:end] 
-    print("P6 ", P6, "\n")
+        # Fourth baby cube: [1:cellsA[1]/2, cellsA[2]/2+1:end, cellsA[3]/2+1:end]
+        M = zeros(ComplexF64,cellsA[1],cellsA[2],cellsA[3],3)
+        M[1:Int(cellsA[1]/2), Int(cellsA[2]/2)+1:end, Int(cellsA[3]/2)+1:end,:] .= 1.0im
+        N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+        P4 = Diagonal(N)
+        print("P4 ", P4, "\n")
+    end
 
-    # Seventh baby cube: [cellsA[1]/2+1:end, 1:cellsA[2]/2, cellsA[3]/2+1:end]
-    M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
-    M[Int(cellsA[1]/2)+1:end, 1:Int(cellsA[2]/2), Int(cellsA[3]/2)+1:end,:] .= 1.0
-    N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
-    P7 = Diagonal(N)
-    # P7 = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
-    # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3,1)) # diag(M)
-    # print("N ", N, "\n")
-    # N_diag = Diagonal(N)
-    # P7 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-    # P7[1:length(N_diag)] = N_diag[1:end]
-    print("P7 ", P7, "\n") 
+    if nb_real_P > 0
+        # Fifth baby cube: [cellsA[1]/2+1:end, 1:cellsA[2]/2, 1:cellsA[3]/2]
+        M = zeros(ComplexF64,cellsA[1],cellsA[2],cellsA[3],3)
+        M[Int(cellsA[1]/2)+1:end, 1:Int(cellsA[2]/2), 1:Int(cellsA[3]/2),:] .= 1.0
+        N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+        P5 = Diagonal(N) 
+        print("P5 ", P5, "\n")
 
-    # Eigth baby cube: [cellsA[1]/2+1:end, cellsA[2]/2+1:end, cellsA[3]/2+1:end]
-    M = zeros(cellsA[1],cellsA[2],cellsA[3],3)
-    M[Int(cellsA[1]/2)+1:end, Int(cellsA[2]/2)+1:end, Int(cellsA[3]/2)+1:end,:] .= 1.0
-    N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
-    P8 = Diagonal(N)
-    # N = reshape(M, (cellsA[1]*cellsA[2]*cellsA[3]*3)) # diag(M))
-    # print("N ", N, "\n")
-    # N_diag = Diagonal(N)
-    # print("N_diag ", N_diag, "\n")
-    # P8 = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3, 1) # Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-    # for i in eachindex(N_diag)
-    # 	if N_diag[i] != 0.0
-    # 		P8[i] = 1.0
-    # 	end 
-    # end 
-    # # P8[1:length(N_diag)] = N_diag[1:end]
-    print("P8 ", P8, "\n")
+        # Sixth baby cube: [cellsA[1]/2+1:end, cellsA[2]/2+1:end, 1:cellsA[3]/2]
+        M = zeros(ComplexF64,cellsA[1],cellsA[2],cellsA[3],3)
+        M[Int(cellsA[1]/2)+1:end, Int(cellsA[2]/2)+1:end, 1:Int(cellsA[3]/2),:] .= 1.0
+        N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+        P6 = Diagonal(N)
+        print("P6 ", P6, "\n")
 
+        # Seventh baby cube: [cellsA[1]/2+1:end, 1:cellsA[2]/2, cellsA[3]/2+1:end]
+        M = zeros(ComplexF64,cellsA[1],cellsA[2],cellsA[3],3)
+        M[Int(cellsA[1]/2)+1:end, 1:Int(cellsA[2]/2), Int(cellsA[3]/2)+1:end,:] .= 1.0
+        N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+        P7 = Diagonal(N)
+        print("P7 ", P7, "\n") 
+
+        # Eigth baby cube: [cellsA[1]/2+1:end, cellsA[2]/2+1:end, cellsA[3]/2+1:end]
+        M = zeros(ComplexF64,cellsA[1],cellsA[2],cellsA[3],3)
+        M[Int(cellsA[1]/2)+1:end, Int(cellsA[2]/2)+1:end, Int(cellsA[3]/2)+1:end,:] .= 1.0
+        N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+        P8 = Diagonal(N)
+        print("P8 ", P8, "\n")
+    end 
 
     # For simplicity, I'm going to say that the first constraints are asymmetric and the ones 
     # after are symmetric 
-    P = [P1,P2,P3,P4,P5,P6,P7,P8]
+    if nb_complex_P == 1
+        P=[P0] 
+    elseif nb_complex_P > 1 && nb_real_P == 0 # Asym constraints only 
+        P = [P0,P1,P2,P3,P4]
+    elseif nb_complex_P > 0 && nb_real_P > 0 # Asym and Sym constraints 
+        P = [P0,P1,P2,P3,P4,P5,P6,P7,P8]
+    end 
     # Is P always real? -> No 
-
-
+    # print("size(P1) ",size(P1),"\n")
+    # print("size(P2) ",size(P2),"\n")
+    # print("size(P3) ",size(P3),"\n")
+    # print("size(P4) ",size(P4),"\n")
+    # print("size(P5) ",size(P5),"\n")
+    # print("size(P6) ",size(P6),"\n")
+    # print("size(P7) ",size(P7),"\n")
+    # print("size(P8) ",size(P8),"\n")
+    print("P ", P, "\n")
     multipliers = L_mults(nb_complex_P,nb_real_P)
 
     return P, multipliers 

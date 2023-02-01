@@ -42,6 +42,7 @@ gMemExtN = G_call[3]
 
 # Initial field creation 
 ei = ei_create(gMemExtN, cellsA, cellsB)
+print("ei ", ei, "\n")
 
 # Let's define some values used throughout the program.
 # chi coefficient
@@ -52,15 +53,19 @@ chi_inv_coeff_dag = conj(chi_inv_coeff)
 
 # Let's get the Ps 
 # These values are hard-coded for now 
-nb_complex_P = 4
-nb_real_P = 4
+nb_complex_P = 0 + 1  # +1 for the number of complex constraint because the 0th constraint 
+# 4
+nb_real_P =  0 # 4
 P = Ps(cellsA, nb_complex_P, nb_real_P)
 
 # Let's generate some random starting Lagrange multiplier values 
 multipliers = L_mults(nb_complex_P,nb_real_P)
+# +1 for the number of complex constraint because the 0th constraint 
+# is the asym only constraint that is the complex identity matrix 
 l = multipliers[1]
 l2 = multipliers[2]
-
+print("l ", l, "\n")
+print("l2 ", l2, "\n")
 
 # Call the Lagrange multiplier optimizer: 
 # This is the code for the main function call using bfgs with the power iteration

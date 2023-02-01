@@ -14,6 +14,8 @@ function MGS(V, t) # Modified_gram_schmidt
         for k = j+1:size(V)[2]
             print("(conj.(transpose(qj))*vk)*qj ", (conj.(transpose(qj))*vj)[1]*qj, "\n")
             # vj -= ((conj.(transpose(qj))*vj)[1])*qj
+            print("vj ", vj, "\n")
+            print("((conj.(transpose(qj))*vj)[1])*qj ", ((conj.(transpose(qj))*vj)[1])*qj, "\n")
             vj = vj - ((conj.(transpose(qj))*vj)[1])*qj
             # vk = vk - (conj.(transpose(vk))*qj)*qj
         end

@@ -192,25 +192,37 @@ function sym_and_asym_sum(l,l2,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, vec)
 	# doesn't seem like it would make much of a different but 
 	# doing something twice a lot of times kinda makes a big/huge difference.
 
-	P_sum_asym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+	P_sum_asym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,cellsA[1]*cellsA[2]*cellsA[3]*3)
     # P sum asym
     if length(l) > 0
         for j in eachindex(l)
-            P_sum_asym += (l[j])*P[j]
+			if length(P) > 1
+				P_sum_asym += (l[j])*P[1][j]
+			else
+				P_sum_asym += (l[j])*P[j]
+			end 
+            
         end 
     end 
 	# P sum sym
-	P_sum_sym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+	P_sum_sym = zeros(cellsA[1]*cellsA[2]*cellsA[3]*3,cellsA[1]*cellsA[2]*cellsA[3]*3)
 	if length(l2) > 0
         for j in eachindex(l)
-            P_sum_sym += (l2[j])*P[Int(length(l))+j]
+			if length(P) > 1
+				P_sum_sym += (l2[j])*P[1][Int(length(l))+j]
+			else
+				P_sum_sym += (l2[j])*P[Int(length(l))+j]
+			end 
         end 
     end 
-	P_sum_asym_vec_product = P_sum_asym.*vec
-	P_sum_sym_vec_product = P_sum_sym.*vec
+	P_sum_asym_vec_product = P_sum_asym*vec
+	P_sum_sym_vec_product = P_sum_sym*vec
+	# print("size(P_sum_asym_vec_product) ", size(P_sum_asym_vec_product), "\n")
+	# print("size(P_sum_sym_vec_product) ", size(P_sum_sym_vec_product), "\n")
+
 	chi_inv_coeff_dag = conj(chi_inv_coeff)
 	term1 = P_sum_asym_vec_product*((chi_inv_coeff_dag-chi_inv_coeff)/2im) + P_sum_sym_vec_product*((chi_inv_coeff_dag+chi_inv_coeff)/2)
-	term2 = -(P_sum_asym/2im+P_sum_sym/2).*GAdjv_AA(gMemSlfN, cellsA, vec)
+	term2 = -(P_sum_asym/2im+P_sum_sym/2)*GAdjv_AA(gMemSlfN, cellsA, vec)
 	term3 = Gv_AA(gMemSlfA, cellsA, P_sum_asym_vec_product/2im - P_sum_sym_vec_product/2)
  
 	return term1 + term2 + term3
