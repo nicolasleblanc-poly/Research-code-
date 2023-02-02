@@ -202,11 +202,11 @@ A[1,1] = 2
 A[1,2] = -1
 A[1,3] = 0
 A[2,1] = -1
-A[2,2] = 2
+A[2,2] = 3
 A[2,3] = -1 
 A[3,1] = 0
 A[3,2] = -1
-A[3,3] = 2
+A[3,3] = 4
 # print(A)
 
 # print(eigen(A).values)
@@ -216,3 +216,8 @@ print(validityfunc(A), "\n")
 data = eigen(A)
 print("Julia eigenvalues ", data.values, "\n")
 # print("Julia eigenvectors ", data.vectors, "\n")
+
+# Function output:
+# eigval_1 4.722078795581014
+# eigenvalue_2 3.4540949752946517
+# min_eigval 1.2679838202863625
