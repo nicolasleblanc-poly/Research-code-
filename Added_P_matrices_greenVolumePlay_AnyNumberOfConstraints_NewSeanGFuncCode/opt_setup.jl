@@ -35,7 +35,7 @@ function Ps(cellsA, nb_complex_P, nb_real_P)
     # The first P is always the asym only constraint and it is
     # the complex identity matrix. 
     M = ones(ComplexF64,cellsA[1],cellsA[2],cellsA[3],3)
-    # M[:, :, :,:] .= 1.0im
+    M[:, :, :,:] .= 1.0im
     N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
     P0 = Diagonal(N)
     print("P0 ", P0, "\n")

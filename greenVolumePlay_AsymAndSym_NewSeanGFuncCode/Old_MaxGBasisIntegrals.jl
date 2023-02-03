@@ -153,22 +153,22 @@ function weakE(scale::NTuple{3,Float64}, glQuad1::Array{Float64,2},
 	vals = weakEDir(3, scale, grdPts, glQuad1, assemblyInfo)
 	# Lower case letters reference the normal directions of the rectangles.
 	# Upper case letter reference the increasing axis direction when necessary. 
-	xxY = vals[1] + rSurfEdgFlt(scale[3], scale[2], assemblyInfo)
-	xxZ = vals[3] + rSurfEdgFlt(scale[2], scale[3], assemblyInfo)
+	xxY = vals[1] + rSurfEdgFlt(scale[1], scale[2], assemblyInfo)
+	xxZ = vals[3] + rSurfEdgFlt(scale[1], scale[3], assemblyInfo)
 	xyA = vals[2] + rSurfEdgCrn(scale[3], scale[2], scale[1], assemblyInfo)
 	xzA = vals[4] + rSurfEdgCrn(scale[2], scale[3], scale[1], assemblyInfo)
 
 	vals = weakEDir(2, scale, grdPts, glQuad1, assemblyInfo)
 
-	yyZ = vals[1] + rSurfEdgFlt(scale[1], scale[3], assemblyInfo)
-	yyX = vals[3] + rSurfEdgFlt(scale[3], scale[1], assemblyInfo)
+	yyZ = vals[1] + rSurfEdgFlt(scale[2], scale[3], assemblyInfo)
+	yyX = vals[3] + rSurfEdgFlt(scale[2], scale[1], assemblyInfo)
 	yzA = vals[2] + rSurfEdgCrn(scale[1], scale[3], scale[2], assemblyInfo)
 	xyB = vals[4] + rSurfEdgCrn(scale[3], scale[2], scale[1], assemblyInfo)
 
 	vals = weakEDir(1, scale, grdPts, glQuad1, assemblyInfo)
 
-	zzX = vals[1] + rSurfEdgFlt(scale[2], scale[1], assemblyInfo)
-	zzY = vals[3] + rSurfEdgFlt(scale[1], scale[2], assemblyInfo)
+	zzX = vals[1] + rSurfEdgFlt(scale[3], scale[1], assemblyInfo)
+	zzY = vals[3] + rSurfEdgFlt(scale[3], scale[2], assemblyInfo)
 	xzB = vals[2] + rSurfEdgCrn(scale[2], scale[3], scale[1], assemblyInfo)
 	yzB = vals[4] + rSurfEdgCrn(scale[1], scale[3], scale[2], assemblyInfo)
 
