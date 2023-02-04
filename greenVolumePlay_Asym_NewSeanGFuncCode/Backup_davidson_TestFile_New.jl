@@ -1,6 +1,6 @@
 module davidson_TestFile_New
 using LinearAlgebra, Random, Arpack
-using KrylovKit
+
 # function modified_gram_schmidt(V, t, i)
 #     # vk = 0
 #     print("V ", V, "\n")
@@ -85,24 +85,19 @@ function davidson_it(A)
     # The first index is to select a row
     # The second index is to select a column
     Vk[:,1] = vk
-    print("Vk ", Vk, "\n")
 
     # Wk = Array{Float64}(undef, rows, cols)
     Wk = zeros(Float64, rows, cols)
     Wk[:,1] = wk
-    print("Wk ", Wk, "\n")
     
     Hk = zeros(Float64, rows, cols)
     # Hk = Array{Float64}(undef, rows, cols)
     # print("hk ", hk[1], "\n")
     Hk[1,1] = hk
-    print("Hk ", Hk, "\n")
 
     u = vk # Vector 
     theta = hk # Number 
     r = wk - real(theta)*u # Vector
-    print("r ", r, "\n")
-
     # t = Array{Float64}(undef, rows, 1)
     t = zeros(Float64, rows, 1)
 
@@ -129,85 +124,54 @@ function davidson_it(A)
             print("u ", u, "\n")
             print("u_mod ", u_mod, "\n")
 
-            # print("det diagional version of A ", det(((I-u_mod*conj.(transpose(u_mod)))*(A_diagonal_matrix-theta[1]*I)*(I-u_mod*conj.(transpose(u_mod))))),"\n")
-            # print("det of normal A ", det(((I-u_mod*conj.(transpose(u_mod)))*(A-theta[1]*I)*(I-u_mod*conj.(transpose(u_mod))))),"\n")
-            # print("((I-u_mod*conj.(transpose(u_mod)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u_mod*conj.(transpose(u_mod)))) ", ((I-u_mod*conj.(transpose(u)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u*conj.(transpose(u)))), "\n")
-            # print("size((I-u*conj.(transpose(u)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u*conj.(transpose(u)))", size((I-u_mod*conj.(transpose(u_mod)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u_mod*conj.(transpose(u_mod)))), "\n")
-            
-            print("I-u_mod*conj.(transpose(u_mod)) ", I-u_mod*conj.(transpose(u_mod)),"\n")
-            print("A_diagonal_matrix-theta[1]*I ", A_diagonal_matrix-theta[1]*I,"\n")
-            print("I-u_mod*conj.(transpose(u_mod)) ", I-u_mod*conj.(transpose(u_mod)),"\n")
-
-            t = inv(((I-u_mod*conj.(transpose(u_mod)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u_mod*conj.(transpose(u_mod)))))*(-r)
-            
+            print("det diagional version of A ", det(((I-u*conj.(transpose(u)))*(A_diagonal_matrix-theta[1]*I)*(I-u*conj.(transpose(u))))),"\n")
+            print("det of normal A ", det(((I-u*conj.(transpose(u)))*(A-theta[1]*I)*(I-u*conj.(transpose(u))))),"\n")
+            # print("((I-u*conj.(transpose(u)))*(A-theta[1]*I)*(I-u*conj.(transpose(u)))) ", ((I-u*conj.(transpose(u)))*(A-theta[1]*I)*(I-u*conj.(transpose(u)))), "\n")
+            print("((I-u*conj.(transpose(u)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u*conj.(transpose(u)))) ", ((I-u*conj.(transpose(u)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u*conj.(transpose(u)))), "\n")
+            t = ((I-u*conj.(transpose(u)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u*conj.(transpose(u))))\(-r)
+            # t = ((I-u*conj.(transpose(u)))*(A-theta[1]*I)*(I-u*conj.(transpose(u))))\(-r)
+            print("size((I-u*conj.(transpose(u)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u*conj.(transpose(u)))", size((I-u*conj.(transpose(u)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u*conj.(transpose(u)))), "\n")
             print("size(r) ", size(r), "\n")
             print("size(t) ", size(t), "\n")
-
-            # Test below: 
-            # Instead of solving the whole thing, let's just solve the part of interest 
-            # print("inv(((I-u_mod*conj.(transpose(u_mod)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u_mod*conj.(transpose(u_mod)))))[1:2,1:2] ", inv(((I-u_mod*conj.(transpose(u_mod)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u_mod*conj.(transpose(u_mod)))))[1:2,1:2], "\n")
-            # print("-r[:,1:2] ", -r[1:2,:], "\n")
-            # t_test = (inv(((I-u_mod*conj.(transpose(u_mod)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u_mod*conj.(transpose(u_mod)))))[1:2,1:2])*(-r[1:2,:])
-            # print("size(t_test) ", size(t_test), "\n")
-            # print("t_test ", t_test, "\n")
-            # t = zeros(Float64, rows, 1)
-            # t[1:2,:] = t_test
-        
+            # Orthogonalize t against V_k using MGS 
+            # Temporary value for the new v_k (aka v_{k+1})
+            # vk = Array{Float64}(undef, rows,1)
+            # vk = zeros(Float64, rows, 1)
+            # rand!(v)
             index = i-1
-            print("Vk ", Vk, "\n")
             print("Vk[:,index] ", Vk[:,1:index], "\n")
-            # New vk vector that will be added as a new column to Vk
             vk = modified_gram_schmidt(Vk[:,1:index], t, index) # modified_gram_schmidt(Vk, t, i)
             print("vk ", vk, "\n")
             # Expand V_k with this vector to V_{k+1}
             Vk[:,i] = vk
-            print("new Vk ", Vk, "\n")
-            # V_{k+1} = vk -> False! See above.
+            # V_{k+1} = vk 
 
-            # New wk that will be added as a new column to Wk
             wk = A*vk 
-            print("wk ", wk, "\n")
-            print("Wk ", Wk, "\n")
             # Expand W_k with this vector to W_{k+1}
-            Wk[:,i] = wk 
-            print("new Wk ", Wk, "\n")
-            # [:,1:index]
+            Wk[:,i] = wk
 
             # print("conj.(transpose(A)) ", conj.(transpose(A)), "\n")
             # print("A ", A, "\n")
             # print("transpose(A)", transpose(A), "\n")
 
             print("Vk ", Vk, "\n")
-            print("Vk[:,1:i] ", Vk[:,1:i], "\n")
             print("wk ", wk, "\n")
             # V*_{k+1} wk = V*_{k+1} A V*_{k+1} = V*_{k+1} A V*_{k+1}
             # print("(conj.(transpose(Vk))*wk)[1] ", (conj.(transpose(Vk))*wk)[1], "\n")
 
-            # Hk[i,i] = (conj.(transpose(Vk))*wk)[1]
-            print("OG Hk ", Hk, "\n")
-            Hk[1:i,i] = (conj.(transpose(Vk[:,1:i]))*wk)
-            print("new Hk v1 ", Hk, "\n")
-            # If we assume that A is hermitan, we don't have index+1to calculate vk*Wk
-            # for the last row of Hk. We can just take the complex conjugate of 
-            # Vk*wk, which we just caculated.
-            Hk[i,1:i] = conj(transpose((conj.(transpose(Vk[:,1:i]))*wk)))
-            print("new Hk v2 ", Hk, "\n")
+            Hk[i,i] = (conj.(transpose(Vk))*wk)[1]
 
             # We comment this part for debugging purposes
             # if A != conj((transpose(A)))
             #     print("(conj.(transpose(Vk))*wk)[1] ", (conj.(transpose(vk))*Wk)[1], "\n")
             #     Hk[end, 1:end] = (conj.(transpose(vk))*Wk) # [1]
             # end
-            
-            print("Julia eigvals ", eigsolve(Hk[1:i,1:i]), "\n")
 
             # Compute the largest eigenpar (theta,s) of H_{k+1} 
             # with the norm(s) = 1
-            eigvals, eigenvectors = eigs(Hk[1:i,1:i], which=:LM)
+            eigvals, eigenvectors = eigs(Hk, which=:LM)
             print("eigvals ", eigvals, "\n")
             print("eigenvectors ", eigenvectors, "\n")
-
-
             # We only want the eigenvalue that is positive
             position = 0
 
@@ -215,14 +179,10 @@ function davidson_it(A)
             # 1. I get a singular matrix when doing the direct solve. 
             # 2. Someting I get negative eigenvalues. 
 
-            max_eigvals = 0.0 
             for i in eachindex(eigvals) # We need the eigenvalues to be positive, right (like before)?
                 if eigvals[i] > 0 
-                    if eigvals[i] > max_eigvals
-                        max_eigvals = eigvals[i]
-                        theta = eigvals[i]
-                        position = i 
-                    end 
+                    theta = eigvals[i]
+                    position = i 
                     print("position ", position, "\n")
                 end 
             end 
@@ -232,8 +192,7 @@ function davidson_it(A)
             s = eigenvector/norm(eigenvector) # normalized_eigenvector
             print("s ", s, "\n")
             
-            print("Vk ", Vk, "\n")
-            u = Vk[:,1:i]*s # Compute the Ritz vector u  
+            u = Vk*s # Compute the Ritz vector u 
             print("u ", u, "\n")
             u_hat = A*u # Should also have: A*u = W_k*s
 
