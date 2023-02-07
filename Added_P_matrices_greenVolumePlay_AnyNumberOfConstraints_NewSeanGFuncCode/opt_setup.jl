@@ -44,7 +44,7 @@ function Ps(cellsA, nb_complex_P, nb_real_P)
     print("nb_complex_P ", nb_complex_P, "\n")
 
     if nb_complex_P > 1
-        # First baby cube [1:cellsA[1]/2, 1:cellsA[2]/2, cellsA[3]/2+1:end]
+        # First baby cube [1:cellsA[1]/2, 1:cellsA[2]/2, cellsA[3]/2:end]
         M = zeros(ComplexF64,cellsA[1],cellsA[2],cellsA[3],3)
         M[1:Int(cellsA[1]/2), 1:Int(cellsA[2]/2), 1:Int(cellsA[3]/2),:] .= 1.0im
         N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
