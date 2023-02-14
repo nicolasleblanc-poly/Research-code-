@@ -66,7 +66,7 @@ function davidson_it(A)
     # u_hat = Array{Float64}(undef, rows, 1)
     u_hat = zeros(Float64, rows, 1)
 
-    for val = 1:1000
+    for val = 1:10
         for i = 2:cols # Old version 
             diagonal_A = diag(A)
             A_diagonal_matrix = Diagonal(diagonal_A)
