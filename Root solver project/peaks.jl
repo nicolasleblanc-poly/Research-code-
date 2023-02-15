@@ -1,5 +1,5 @@
-
-
+module peaks
+export peak_finder
 function peak_finder(xs, ys) #finds the peaks within the sampled point
     slope_criteria = 2 #this needs to be more dynamic, to account for the amount of sampled
     peaks = []
@@ -35,3 +35,4 @@ function peak_finder(xs, ys) #finds the peaks within the sampled point
     end
     return peaks
 end
+end 

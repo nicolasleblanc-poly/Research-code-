@@ -1,5 +1,5 @@
-
-
+module Pade_approx 
+export Pade, rebuild 
 function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
     #Padé approximant algorithm
     x = x
@@ -32,24 +32,7 @@ function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
             end
         end
     end
-    function rebuild(x) #rebuild the approximation from the little blocks
-        A = zeros(l)
-        B = zeros(l)
-        A[1] = P[1]
-        B[1] = 1
-        A[2] = P[2]*P[1] + (x-X[1])
-        B[2] = P[2]
-        for i in range(2, l-1)
-            A[i+1] = A[i]*(P[i+1] -P[i-1]) + A[i-1]*(x-X[i])
-        B[i+1] = B[i]*(P[i+1] -P[i-1]) + B[i-1]*(x-X[i])
-        end
-        if isinf(abs(A[l])) == true || isinf(abs(B[l])) == true || isnan(abs(A[l])) == true
-            throw(Error) #not sure what to do when this happens yet, problems occur when N e
-        else
-            return A[l]/B[l]
-        end
-    end
-
+    
     local px
     if isempty(rebuild_with)== true
         px = [i for i in range(xl, xr, N)]
@@ -60,3 +43,23 @@ function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
     end
     return (px, approx)
 end
+
+function rebuild(x) #rebuild the approximation from the little blocks
+    A = zeros(l)
+    B = zeros(l)
+    A[1] = P[1]
+    B[1] = 1
+    A[2] = P[2]*P[1] + (x-X[1])
+    B[2] = P[2]
+    for i in range(2, l-1)
+        A[i+1] = A[i]*(P[i+1] -P[i-1]) + A[i-1]*(x-X[i])
+    B[i+1] = B[i]*(P[i+1] -P[i-1]) + B[i-1]*(x-X[i])
+    end
+    if isinf(abs(A[l])) == true || isinf(abs(B[l])) == true || isnan(abs(A[l])) == true
+        throw(Error) #not sure what to do when this happens yet, problems occur when N e
+    else
+        return A[l]/B[l]
+    end
+end
+
+end 

@@ -1,5 +1,5 @@
-
-
+module convexity
+export convexity_test
 function convexity_test(x,y, display_plot = false)
     local xl = 0
     local i = 1
@@ -37,3 +37,4 @@ function convexity_test(x,y, display_plot = false)
     end
     return xl
 end
+end 

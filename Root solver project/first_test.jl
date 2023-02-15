@@ -1,4 +1,4 @@
-
+using convexity,func,Pade_approx,peaks,Random_Matrix,root_finder
 
 function First_test(x_start)
     xs = Any[x_start]

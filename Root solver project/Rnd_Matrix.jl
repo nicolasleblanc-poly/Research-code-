@@ -1,4 +1,4 @@
-module Random_Matrix
+module Rnd_Matrix
 using LinearAlgebra
 export indefinite, definite
 function indefinite(n) # n is the size of the output matrix
@@ -39,8 +39,8 @@ end
 end
 #end of random matrix generator module
 
-n = 100
-A_0 = Random_Matrix.indefinite(n)
-A_1 = Random_Matrix.definite(n)
-s_0 = rand(n,1)
-s_1 = rand(n,1)
+# n = 100
+# A_0 = Random_Matrix.indefinite(n)
+# A_1 = Random_Matrix.definite(n)
+# s_0 = rand(n,1)
+# s_1 = rand(n,1)
