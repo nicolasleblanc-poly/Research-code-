@@ -1,25 +1,40 @@
-module davidson_TestFile_New
-using LinearAlgebra, Random, Arpack
-using KrylovKit
+module Davidson_HarmonizRitz_TestFile
+using LinearAlgebra, Random, Arpack, KrylovKit # , bicgstab
 
-function modified_gram_schmidt(A, t, index) # i
-    # orthogonalises the columns of the input matrix
-    matrix = Array{Float64}(undef, size(A)[1],index+1) # 1rst old thing index+size(t)[2] , other old thing size(A)[1]
-    # i is the amount of cols (which are vectors) of A that we are considering here 
-    matrix[:,1:index] = A #  matrix[:,1:size(A)[2]] = A
-    matrix[:,index+1:end] = t
+# function modified_gram_schmidt(A, t, index) # i
+#     # orthogonalises the columns of the input matrix
+#     matrix = Array{Float64}(undef, size(A)[1],index+1) # 1rst old thing index
+# +size(t)[2] , other old thing size(A)[1]
+#     # i is the amount of cols (which are vectors) of A that we are 
+# considering here 
+#     matrix[:,1:index] = A #  matrix[:,1:size(A)[2]] = A
+#     matrix[:,index+1:end] = t
 
-    num_vectors = size(matrix)[2]
-    orth_matrix = copy(matrix)
-    for vec_idx = 1:num_vectors
-        orth_matrix[:, vec_idx] = orth_matrix[:, vec_idx]/norm(orth_matrix[:, vec_idx])
-        for span_base_idx = (vec_idx+1):num_vectors
-            # perform block step
-            orth_matrix[:, span_base_idx] -= dot(orth_matrix[:, span_base_idx], orth_matrix[:, vec_idx])*orth_matrix[:, vec_idx]
-        end
-    end
-    return orth_matrix[:,end:end]
+#     num_vectors = size(matrix)[2]
+#     orth_matrix = copy(matrix)
+#     for vec_idx = 1:num_vectors
+#         orth_matrix[:, vec_idx] = orth_matrix[:, vec_idx]/norm(orth_matrix[:, vec_idx])
+#         for span_base_idx = (vec_idx+1):num_vectors
+#             # perform block step
+#             orth_matrix[:, span_base_idx] -= dot(orth_matrix[:, span_base_idx], orth_matrix[:, vec_idx])*orth_matrix[:, vec_idx]
+#         end
+#     end
+#     return orth_matrix[:,end:end]
+# end
+
+function gram!(V) # i
+    print("V MGS", V, "\n")
+    nrm = norm(V[:,end])
+    V[:,end] = V[:,end]/nrm
+    print("V[:,1:end-1] ", V[:,1:end-1], "\n")
+    print("V[:,end] ", V[:,end], "\n")
+    # proj_coeff = dot(V[:,1:end-1],V[:,end])
+    proj_coeff = conj!(tranpspose([:,1:end-1])).*V[:,end]
+    V[:,end] = V[:,end] - proj_coeff*V[:,1:end-1]
+    nrm = norm(V[:,end])
+    V[:,end] = V[:,end]/nrm
 end
+
 
 function davidson_it(A)
     # m = 20 # Amount of iterations of the inner loop
@@ -82,21 +97,41 @@ function davidson_it(A)
             # print("A_diagonal_matrix-theta[1]*I ", A_diagonal_matrix-theta[1]*I,"\n")
             # print("I-u_mod*conj.(transpose(u_mod)) ", I-u_mod*conj.(transpose(u_mod)),"\n")
 
-            t = inv(((I-u_mod*conj.(transpose(u_mod)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u_mod*conj.(transpose(u_mod)))))*(-r)
+            t = inv(((I-u_mod*conj.(transpose(u_mod)))*(A_diagonal_matrix-
+            real(theta[1])*I)*(I-u_mod*conj.(transpose(u_mod)))))*(-r)
             
             # print("size(r) ", size(r), "\n")
             # print("size(t) ", size(t), "\n")
         
-            index = i-1
+
+            # Before, the code took Vk without the n+1 column, which is 
+            # what we want to replace with a version of t that is orthogonal 
+            # to all the columns of Vk that is calculated with modified 
+            # gramd schmidth) and used the t calculated above in the MGS 
+            # function. This was inefficient because we would create a new 
+            # matrix that would combine Vk and t into one matrix each time 
+            # the function was called. Instead, here we will directly replace 
+            # the n+1 column by t and we will modify the memory associated to Vk
+            # in the new modified gram schmidth function that was suggested by 
+            # Sean. This is way more efficient since we only defined Vk once 
+            # and we just modify the Vk's memory. 
             print("Vk ", Vk, "\n")
-            print("Vk[:,index] ", Vk[:,1:index], "\n")
-            # New vk vector that will be added as a new column to Vk
-            vk = modified_gram_schmidt(Vk[:,1:index], t, index) # modified_gram_schmidt(Vk, t, i)
-            print("vk ", vk, "\n")
-            # Expand V_k with this vector to V_{k+1}
-            Vk[:,i] = vk
-            print("new Vk ", Vk, "\n")
-            # V_{k+1} = vk -> False! See above.
+            print("t ", t, "\n")
+            Vk[:,i] = t
+            print("V Loop", Vk, "\n")
+            # print("Index test for MGS ", Vk[:,1:end], "\n")
+            gram!(view(Vk,:,1:i))
+
+            # index = i-1
+            # print("Vk ", Vk, "\n")
+            # print("Vk[:,index] ", Vk[:,1:index], "\n")
+            # # New vk vector that will be added as a new column to Vk
+            # vk = modified_gram_schmidt(Vk[:,1:index], t, index) # modified_gram_schmidt(Vk, t, i)
+            # print("vk ", vk, "\n")
+            # # Expand V_k with this vector to V_{k+1}
+            # Vk[:,i] = vk
+            # print("new Vk ", Vk, "\n")
+            # # V_{k+1} = vk -> False! See above.
 
             # New wk that will be added as a new column to Wk
             wk = A*vk 
@@ -124,14 +159,7 @@ function davidson_it(A)
             # for the last row of Hk. We can just take the complex conjugate of 
             # Vk*wk, which we just caculated.
             Hk[i,1:i] = conj(transpose(hk))
-            # Hk[i,1:i] = conj(transpose((conj.(transpose(Vk[:,1:i]))*wk)))
             print("new Hk v2 ", Hk, "\n")
-
-            # We comment this part for debugging purposes
-            # if A != conj((transpose(A)))
-            #     print("(conj.(transpose(Vk))*wk)[1] ", (conj.(transpose(vk))*Wk)[1], "\n")
-            #     Hk[end, 1:end] = (conj.(transpose(vk))*Wk) # [1]
-            # end
             
             print("Julia eigvals ", eigsolve(Hk[1:i,1:i]), "\n")
 
@@ -141,13 +169,8 @@ function davidson_it(A)
             print("eigvals ", eigvals, "\n")
             print("eigenvectors ", eigenvectors, "\n")
 
-
             # We only want the eigenvalue that is positive
             position = 0
-
-            # Problems with the code right now:
-            # 1. I get a singular matrix when doing the direct solve. 
-            # 2. Someting I get negative eigenvalues. 
 
             max_eigvals = 0.0 
             for i in eachindex(eigvals) # We need the eigenvalues to be positive, right (like before)?
@@ -188,15 +211,12 @@ function davidson_it(A)
             break 
         end 
         Vk = zeros(Float64, rows, cols)
-        # Vk = Array{Float64}(undef, rows, cols)
-        Vk[1:end,1] = vk
+        Vk[1:end,1] = u
 
         Wk = zeros(Float64, rows, cols)
-        # Wk = Array{Float64}(undef, rows, cols)
         Wk[1:end,1] = u_hat
         
         Hk = zeros(Float64, rows, cols)
-        # Hk = Array{Float64}(undef, rows, cols)
         Hk[1,1] = real(theta[1])
         
     end
