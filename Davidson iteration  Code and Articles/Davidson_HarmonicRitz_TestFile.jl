@@ -1,5 +1,5 @@
 module Davidson_HarmonizRitz_TestFile
-using LinearAlgebra, Random, Arpack, KrylovKit # , bicgstab
+using LinearAlgebra, Random, Arpack, KrylovKit, bicgstab
 
 # function modified_gram_schmidt(A, t, index) # i
 #     # orthogonalises the columns of the input matrix
@@ -37,10 +37,16 @@ using LinearAlgebra, Random, Arpack, KrylovKit # , bicgstab
 
 
 function davidson_it(A)
+    """
+    This function is the Davidson iteration algorithm. It is a hopefully better
+    alternative to the Power iteration method since it uses past information to 
+    choose search directions and at each new iteration. We use harmonic Rizt 
+    vectors here, which allows to directly find the minimum eigenvalue. 
+    """
     # m = 20 # Amount of iterations of the inner loop
 
     # Part 1. Setup 
-    tol = 1e-15 # Tolerance for which the program will converge 
+    tol = 1e-8 # Tolerance for which the program will converge 
 
     rows = size(A)[1]
     cols = size(A)[2]
@@ -68,7 +74,7 @@ function davidson_it(A)
     print("Wk ", Wk, "\n")
     
     Lk = zeros(Float64, rows, cols)
-    # Hk = Array{Float64}(undef, rows, cols)
+    # Lk = Array{Float64}(undef, rows, cols)
     Lk[1,1] = lk
     print("Lk ", Lk, "\n")
 
@@ -83,11 +89,7 @@ function davidson_it(A)
     r = u_hat - real(theta_tilde)*u_tilde # Vector
     print("r ", r, "\n")
 
-    # t = Array{Float64}(undef, rows, 1)
     t = zeros(Float64, rows, 1)
-
-    # u_hat = Array{Float64}(undef, rows, 1)
-    # u_hat = zeros(Float64, rows, 1)
 
     # Part 2: Inner loop 
     for val = 1:10
@@ -104,30 +106,25 @@ function davidson_it(A)
             # print("u_mod[end:end,1] ", u_mod[end:end,1], "\n")
             u_hat_mod[end] = 0.0
             
-            # print("u ", u, "\n")
-            # print("u_mod ", u_mod, "\n")
-            
-            # print("I-u_mod*conj.(transpose(u_mod)) ", I-u_mod*conj.(transpose(u_mod)),"\n")
-            # print("A_diagonal_matrix-theta[1]*I ", A_diagonal_matrix-theta[1]*I,"\n")
-            # print("I-u_mod*conj.(transpose(u_mod)) ", I-u_mod*conj.(transpose(u_mod)),"\n")
+            # Solve for t using inverse method 
+            # t = inv(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
+            # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
+            # real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
+            # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])))*(-r)
 
-            # print("conj.(transpose(u_hat_mod)) ", 
-            # conj.(transpose(u_hat_mod)), "\n")
-            # print("u_tilde_mod ", u_tilde_mod, "\n")
-
-            # print("conj.(transpose(u_hat_mod))*u_tilde_mod ", 
-            # conj.(transpose(u_hat_mod))*u_tilde_mod, "\n")
-
-            
-            t = inv(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
+            # Solve for t using bicgstab 
+            t = bicgstab_matrix(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
             (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
             real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-            (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])))
+            (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])),-r)
+
 
             print("t ", t, "\n")
             print("Lk ", Lk[1:i-1,1:i-1], "\n")
 
-            t_tilde = t - Vk*inv(Lk[1:i-1,1:i-1])*conj.(transpose(Wk))*t
+            t_tilde = t - Vk[:,1:i-1]*inv(Lk[1:i-1,1:i-1])*
+            conj.(transpose(Wk[:,1:i-1]))*t
+            print("t_tilde ", t_tilde, "\n")
             vk = t_tilde/norm(t_tilde)
             Vk[:,i] = vk # Add the new vk to the Vk matrix
 
@@ -139,33 +136,15 @@ function davidson_it(A)
             Wk[:,i] = wk 
             print("new Wk ", Wk, "\n")
 
-            lk = conj.(tranpose(wk))*Vk
+            lk = conj.(transpose(wk))*Vk[:,1:i]
+            print("lk ", lk, "\n")
+            print("Lk ", Lk, "\n")
             # Expand L_k with this vector to W_{k+1}
             Lk[i,1:i] = lk # Row of matrix 
 
-            hk = conj.(transpose(wk))*Wk
+            hk = conj.(transpose(wk))*Wk[:,1:i]
             Hk[i,1:i] = hk # Row of matrix
             Hk[1:i,i] = conj.(transpose(hk)) 
-
-            # print("Vk ", Vk, "\n")
-            # print("Vk[:,1:i] ", Vk[:,1:i], "\n")
-            # print("wk ", wk, "\n")
-            # # V*_{k+1} wk = V*_{k+1} A V*_{k+1} = V*_{k+1} A V*_{k+1}
-            # # print("(conj.(transpose(Vk))*wk)[1] ", (conj.(transpose(Vk))*wk)[1], "\n")
-
-            # # Hk[i,i] = (conj.(transpose(Vk))*wk)[1]
-            # print("OG Hk ", Hk, "\n")
-            # # hk is now a vector
-            # hk = (conj.(transpose(Vk[:,1:i]))*wk)
-            # Hk[1:i,i] = hk # Column of matrix 
-            # # Hk[1:i,i] = (conj.(transpose(Vk[:,1:i]))*wk)
-            # print("new Hk v1 ", Hk, "\n")
-
-            # If we assume that A is hermitan, we don't have index+1to calculate vk*Wk
-            # for the last row of Hk. We can just take the complex conjugate of 
-            # Vk*wk, which we just caculated.
-            # Hk[i,1:i] = conj(transpose(hk)) # Row of matrix
-            # print("new Hk v2 ", Hk, "\n")
             
             print("Julia eigvals ", eigsolve(Hk[1:i,1:i]), "\n")
 
@@ -176,28 +155,30 @@ function davidson_it(A)
             print("eigvals ", eigvals, "\n")
             print("eigenvectors ", eigenvectors, "\n")
 
-            # We only want the eigenvalue that is positive
+            # We only want the smallest eigenvalue that is positive
             position = 0
-
-            min_eigvals = 0.0 
+            min_eigvals = 20.0 
             for i in eachindex(eigvals) # We need the eigenvalues to be positive, right (like before)?
-                if eigvals[i] > 0 
-                    if eigvals[i] < min_eigvals
-                        min_eigvals = eigvals[i]
-                        theta_tilde = eigvals[i]
-                        position = i 
-                    end 
+                # print("i ", i, "\n")
+                # print("eigvals[i] ", eigvals[i], "\n")
+                if eigvals[i] > 0 && eigvals[i] < min_eigvals
+                    min_eigvals = eigvals[i]
+                    theta_tilde = eigvals[i]
+                    position = i 
+                    print("i loop", i, "\n")
                     print("position ", position, "\n")
                 end 
             end 
             s = eigenvectors[:,position]
+            # s = eigenvectors
+            # theta_tilde = eigvals 
             print("theta (eigenvalue): ", theta_tilde, "\n")
             print("s (eigenvector): ", s, "\n")
             # s = eigenvector/norm(eigenvector) # normalized_eigenvector
             # print("s ", s, "\n")
             
             # Compute the harmonic Ritz vector 
-            u_tilde = (Vk*s)/norm(Vk*s)
+            u_tilde = (Vk[:,1:i]*s)/norm(Vk[:,1:i]*s)
             u_hat = A*u_tilde 
             # Should be equal to (Wk*s)/norm(Vk*s)
             
@@ -236,8 +217,11 @@ function davidson_it(A)
         # Hk[1,1] = real(theta[1])
         
     end
-    return real(theta)
+    return real(theta_tilde)
 end 
+
+# We want to get 0.885092 as our minimum eigenvalue and (5.58774,3.11491,1)
+# as our eigenvector associate to the minimum eigenvalue
 
 A = Array{Float64}(undef, 3, 3)
 A[1,1] = 2

@@ -1,6 +1,6 @@
 module bicgstab
 export bicgstab_matrix 
-using product, LinearAlgebra, vector
+using LinearAlgebra
 # Based on the example code from p. 686 (or p.696 of the pdf) of the 
 # Introduction to Numerical Analysis textbook. 
 # Code for when using a matrix and not an operator.  
