@@ -1,5 +1,5 @@
 module Davidson_HarmonizRitz_TestFile
-using LinearAlgebra, Random, Arpack, KrylovKit, bicgstab
+using LinearAlgebra, Random, Arpack, KrylovKit, bicgstab, cg
 
 # function modified_gram_schmidt(A, t, index) # i
 #     # orthogonalises the columns of the input matrix
@@ -46,7 +46,7 @@ function davidson_it(A)
     # m = 20 # Amount of iterations of the inner loop
 
     # Part 1. Setup 
-    tol = 1e-8 # Tolerance for which the program will converge 
+    tol = 1e-3 # Tolerance for which the program will converge 
 
     rows = size(A)[1]
     cols = size(A)[2]
@@ -113,7 +113,13 @@ function davidson_it(A)
             # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])))*(-r)
 
             # Solve for t using bicgstab 
-            t = bicgstab_matrix(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
+            # t = bicgstab_matrix(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
+            # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
+            # real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
+            # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])),-r)
+
+            # Solve for t using cg 
+            t = cg_matrix(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
             (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
             real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
             (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])),-r)
@@ -185,28 +191,14 @@ function davidson_it(A)
             # Compute the residual 
             r = u_hat - theta_tilde[1]*u_tilde # Residual vector 
             print("r ", r, "\n")
-            
-            # print("Vk ", Vk, "\n")
-            # u = Vk[:,1:i]*s # Compute the Ritz vector u  
-            # print("u ", u, "\n")
-            # u_hat = A*u # Should also have: A*u = W_k*s
-
-            # # u_hat test to see if A*u = W_k*s 
-            # u_hat_test = Wk[:,1:i]*s
-            # print("u_hat_test ", u_hat_test, "\n")
-
-            # print("u_hat ", u_hat, "\n")
-            # print("theta[1] ", real(theta[1]), "\n")
-            # print("theta[1]*u ", theta[1]*u, "\n")
-            # r = u_hat - theta[1]*u # Residual vector 
-            # print("r ", r, "\n")
+            print("norm of residual ", norm(r), "\n")
+            if norm(r) <= tol
+                print("Exited the loop using break")
+                break
+            end 
             
         end
-        print("norm of residual ", norm(r), "\n")
-        if norm(r) <= tol
-            print("Exited the loop using break")
-            break 
-        end 
+        
         # Vk = zeros(Float64, rows, cols)
         # Vk[1:end,1] = u
 

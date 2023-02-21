@@ -8,10 +8,13 @@ using LinearAlgebra
 # m is the maximum number of iterations
 function bicgstab_matrix(A,b)
     v_m1 = p_m1 = xk_m1 = zeros(ComplexF64,length(b),1)
+    tol = 1e-4
+
     # Ax=0 since the initial xk is 0
     r0 = r_m1 = b 
     rho_m1 = alpha = omega_m1 = 1
-    for k in 1:length(b)
+    # for k in 1:length(b)
+    for k in 1:1000
         rho_k = conj.(transpose(r0))*r_m1
         
         # beta calculation
@@ -52,7 +55,14 @@ function bicgstab_matrix(A,b)
 
         xk_m1 = h + omega_k.*s
 
+        r_old = r_m1
+
         r_m1 = s-omega_k.*t
+
+        if norm(r_m1)-norm(r_old) < tol
+            break
+            print("bicgstab break \n")
+        end 
 
     end
     return xk_m1
