@@ -1,6 +1,6 @@
 module cg 
 export cg_matrix
-using LinearAlgebra, vector
+using LinearAlgebra
 # Based on the example code from https://en.wikipedia.org/wiki/Conjugate_gradient_method
 # Code for the AA case 
 
@@ -43,6 +43,9 @@ function cg_matrix(A,b)
         rkplus1_rkplus1 = conj.(transpose(rk))*rk
         # The bottom term is the same one calculated earlier 
         # Division 
+        print("rkplus1_rkplus1 ", rkplus1_rkplus1, "\n")
+        print("rkrk ", rkrk, "\n")
+
         beta_k = rkplus1_rkplus1/rkrk
 
         pk = rk + beta_k.*pk
@@ -50,4 +53,18 @@ function cg_matrix(A,b)
     end
     return xk
 end 
+
+A = Array{Float64}(undef, 2, 2)
+A[1,1] = 4
+A[1,2] = 1
+A[2,1] = 1
+A[2,2] = 3 
+
+b = Array{Float64}(undef, 2, 1)
+b[1,1] = 1
+b[2,1] = 2
+
+print("A ", A, "\n")
+print("Test ", cg_matrix(A,b), "\n")
+
 end 

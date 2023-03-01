@@ -1,6 +1,6 @@
 module Pade_approx 
 export Pade, rebuild 
-function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
+function Pade(x, y, xl, xr; N = 500, rebuild_with = []) # xr = xmax
     #Padé approximant algorithm
     x = x
     r = y
@@ -36,15 +36,16 @@ function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
     local px
     if isempty(rebuild_with)== true
         px = [i for i in range(xl, xr, N)]
-        approx = map(rebuild, px)
+        approx = map(rebuild,px,l,P)
     else
         px = rebuild_with
-        approx = map(rebuild, px)
+        approx = map(rebuild,px,l,P)
     end
     return (px, approx)
 end
 
-function rebuild(x) #rebuild the approximation from the little blocks
+function rebuild(x,l,P) #rebuild the approximation from the little blocks
+    print("P ", P, "\n")
     A = zeros(l)
     B = zeros(l)
     A[1] = P[1]

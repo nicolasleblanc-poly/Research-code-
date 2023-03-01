@@ -78,22 +78,33 @@ function davidson_it(A)
     Lk[1,1] = lk
     print("Lk ", Lk, "\n")
 
-    Hk = zeros(Float64, rows, cols)
-    # Hk = Array{Float64}(undef, rows, cols)
-    Hk[1,1] = hk
-    print("Hk ", Hk, "\n")
+    Hk_hat = zeros(Float64, rows, cols)
+    # Hk_hat = Array{Float64}(undef, rows, cols)
+    Hk_hat[1,1] = hk
+    print("Hk_hat ", Hk_hat, "\n")
+
+    Hk_tilde = zeros(Float64, rows, cols)
 
     u_tilde = vk # Vector 
     u_hat = wk # Vector 
+    print("u_tilde ", u_tilde, "\n")
+    print("u_hat ", u_hat, "\n")
     theta_tilde = hk/lk # Number 
     r = u_hat - real(theta_tilde)*u_tilde # Vector
     print("r ", r, "\n")
 
     t = zeros(Float64, rows, 1)
 
+    # Test matrix to see if 
+    # conj.(transpose(eig_vect_matrix))*Hk_hat*eig_vect_matrix = A
+    eig_vect_matrix = zeros(Float64, rows, cols)
+    julia_eigvals = 0
+    julia_eigvects = 0
+
     # Part 2: Inner loop 
-    for val = 1:10
-        for i = 2:cols # Old version 
+    for val = 1:1
+        for i = 1:cols  
+        # for i = 2:cols # Old version 
             diagonal_A = diag(A)
             A_diagonal_matrix = Diagonal(diagonal_A)
             # print("A_diagonal_matrix ", A_diagonal_matrix, "\n")
@@ -105,24 +116,36 @@ function davidson_it(A)
             u_hat_mod = copy(u_hat)
             # print("u_mod[end:end,1] ", u_mod[end:end,1], "\n")
             u_hat_mod[end] = 0.0
+
+            # Solve for t using bicgstab 
+
+            # 1. Here we using only the diagonal of A and we make the 
+            # last element of u_tilde and u_hat equal to 0. 
+            t = bicgstab_matrix(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
+            (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
+            real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
+            (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])),-r)
+
+            # What if we still take the diagonal of A but don't make the last 
+            # element of u_tilde and u_hat equal to 0.
+            # t = bicgstab_matrix(((I-(u_tilde*conj.(transpose(u_hat)))/
+            # (conj.(transpose(u_hat))*u_tilde)[1])*(A_diagonal_matrix-
+            # real(theta_tilde[1])*I)*(I-(u_tilde*conj.(transpose(u_hat)))/
+            # (conj.(transpose(u_hat))*u_tilde)[1])),-r)
+
+            # 2. Here we only use a part of A and 
+
+            # Solve for t using cg 
+            # t = cg_matrix(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
+            # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
+            # real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
+            # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])),-r)
             
             # Solve for t using inverse method 
             # t = inv(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
             # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
             # real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
             # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])))*(-r)
-
-            # Solve for t using bicgstab 
-            # t = bicgstab_matrix(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-            # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
-            # real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-            # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])),-r)
-
-            # Solve for t using cg 
-            t = cg_matrix(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-            (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
-            real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-            (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])),-r)
 
 
             print("t ", t, "\n")
@@ -131,51 +154,68 @@ function davidson_it(A)
             t_tilde = t - Vk[:,1:i-1]*inv(Lk[1:i-1,1:i-1])*
             conj.(transpose(Wk[:,1:i-1]))*t
             print("t_tilde ", t_tilde, "\n")
-            vk = t_tilde/norm(t_tilde)
-            Vk[:,i] = vk # Add the new vk to the Vk matrix
+            vk = t_tilde/norm(t_tilde) # v_{k+1}
+            Vk[:,i] = vk # Add the new vk to the Vk matrix -> V_{k+1}
 
             # New wk that will be added as a new column to Wk
-            wk = A*vk 
+            wk = A*vk # w_{k+1} = A*v_{k+1}
             print("wk ", wk, "\n")
             print("Wk ", Wk, "\n")
             # Expand W_k with this vector to W_{k+1}
-            Wk[:,i] = wk 
+            Wk[:,i] = wk # W_{k+1}
             print("new Wk ", Wk, "\n")
 
             lk = conj.(transpose(wk))*Vk[:,1:i]
             print("lk ", lk, "\n")
             print("Lk ", Lk, "\n")
             # Expand L_k with this vector to W_{k+1}
-            Lk[i,1:i] = lk # Row of matrix 
+            Lk[i,1:i] = lk # Row of matrix -> L_{k+1}
 
             hk = conj.(transpose(wk))*Wk[:,1:i]
-            Hk[i,1:i] = hk # Row of matrix
-            Hk[1:i,i] = conj.(transpose(hk)) 
+            # H_hat_{k+1}
+            Hk_hat[i,1:i] = hk # Row of matrix
+            Hk_hat[1:i,i] = conj.(transpose(hk)) # Column of matrix
+            print("Hk_hat ", Hk_hat, "\n")
+
+            Hk_tilde = inv(Lk[1:i,1:i])*Hk_hat[1:i,1:i] # H_tilde_{k+1}
             
-            print("Julia eigvals ", eigsolve(Hk[1:i,1:i]), "\n")
 
-            # Compute the largest eigenpar (theta,s) of H_{k+1} 
+            # julia_eig_solve =  eigsolve(Hk_hat[1:i,1:i]) # Old, this was a mistake
+            julia_eig_solve =  eigsolve(Hk_tilde[1:i,1:i])
+            julia_eigvals = julia_eig_solve[1]
+            julia_eigvects = julia_eig_solve[2]
+            print("Julia eigvals ", julia_eigvals, "\n")
+            print("Julia eigvectors ", julia_eigvects, "\n")
+            theta_tilde = julia_eigvals[end]
+            s =  julia_eigvects[end][:] # Minimum eigvector
+            print("theta", theta_tilde, "\n")
+            print("s", s, "\n")
+            
+
+            # Compute the largest eigenpair (theta,s) of H_{k+1} 
             # with the norm(s) = 1
-            eigvals, eigenvectors = eigs(Hk[1:i,1:i], which=:SM) 
-            # SM => smallest magnitude 
-            print("eigvals ", eigvals, "\n")
-            print("eigenvectors ", eigenvectors, "\n")
+            # eigvals, eigenvectors = eigs(Hk[1:i,1:i], which=:SM) 
+            # # SM => smallest magnitude 
+            # print("eigvals ", eigvals, "\n")
+            # print("eigenvectors ", eigenvectors, "\n")
 
-            # We only want the smallest eigenvalue that is positive
-            position = 0
-            min_eigvals = 20.0 
-            for i in eachindex(eigvals) # We need the eigenvalues to be positive, right (like before)?
-                # print("i ", i, "\n")
-                # print("eigvals[i] ", eigvals[i], "\n")
-                if eigvals[i] > 0 && eigvals[i] < min_eigvals
-                    min_eigvals = eigvals[i]
-                    theta_tilde = eigvals[i]
-                    position = i 
-                    print("i loop", i, "\n")
-                    print("position ", position, "\n")
-                end 
-            end 
-            s = eigenvectors[:,position]
+            # # We only want the smallest eigenvalue that is positive
+            # position = 0
+            # min_eigvals = 20.0 
+            # for i in eachindex(eigvals) 
+            # # We need the eigenvalues to be positive, right (like before)?
+            #     # print("i ", i, "\n")
+            #     # print("eigvals[i] ", eigvals[i], "\n")
+            #     if eigvals[i] > 0 && eigvals[i] < min_eigvals
+            #         min_eigvals = eigvals[i]
+            #         theta_tilde = eigvals[i]
+            #         position = i 
+            #         print("i loop", i, "\n")
+            #         print("position ", position, "\n")
+            #     end 
+            # end 
+            # s = eigenvectors[:,position]
+
             # s = eigenvectors
             # theta_tilde = eigvals 
             print("theta (eigenvalue): ", theta_tilde, "\n")
@@ -192,22 +232,42 @@ function davidson_it(A)
             r = u_hat - theta_tilde[1]*u_tilde # Residual vector 
             print("r ", r, "\n")
             print("norm of residual ", norm(r), "\n")
-            if norm(r) <= tol
+            print("real((conj.(transpose(r))*r)[1]) ", 
+            real((conj.(transpose(r))*r)[1]), "\n")
+
+            # if norm(r) <= tol
+            if real((conj.(transpose(r))*r)[1]) < tol
                 print("Exited the loop using break")
                 break
             end 
             
         end
         
+        # Reset for new iteration when you run out of memory. 
         # Vk = zeros(Float64, rows, cols)
         # Vk[1:end,1] = u
 
         # Wk = zeros(Float64, rows, cols)
         # Wk[1:end,1] = u_hat
         
-        # Hk = zeros(Float64, rows, cols)
-        # Hk[1,1] = real(theta[1])
+        # Hk_hat = zeros(Float64, rows, cols)
+        # Hk_hat[1,1] = real(theta[1])
+
+        print("Vk*conj.(transpose(Vk)) ", conj.(transpose(Vk))*Vk, "\n")
         
+        # Test 
+        print("julia_eigvects[:][:] ", julia_eigvects[:][:], "\n")
+        # eig_vect_matrix[:,:] = julia_eigvects[:][:]
+
+        eig_vect_matrix[:,1] = julia_eigvects[1][:]
+        eig_vect_matrix[:,2] = julia_eigvects[2][:]
+        eig_vect_matrix[:,3] = julia_eigvects[3][:]
+        print("eig_vect_matrix ", eig_vect_matrix, "\n")
+        # A_test = eig_vect_matrix*Hk_tilde*eig_vect_matrix
+        A_test = eig_vect_matrix*Hk_tilde*conj.(transpose(eig_vect_matrix))
+        # A_test = conj.(transpose(eig_vect_matrix))*Hk_tilde*eig_vect_matrix
+        print("A_test ", A_test, "\n")
+        print("A ", A, "\n")
     end
     return real(theta_tilde)
 end 

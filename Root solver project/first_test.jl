@@ -1,24 +1,37 @@
-using convexity,func,Pade_approx,peaks,Random_Matrix,root_finder
+using convexity,func,Pade_approx,peaks,Rnd_Matrix,root_finder
 
 function First_test(x_start)
     xs = Any[x_start]
+    print("x_start ", x_start, "\n")
     ys = Any[f(x_start)]
+    print("ys", ys, "\n")
+    xl = 0.0
     xr = x_start
     local xl = 0
     xn = x_start/2
     #check if our starting point gives us a value above 0
     ###### Need completing #####
     if ys[end] <= 0
+        print("Start value wasn't adequate \n")
         while ys[end] <=0
             x_start = 2*x_start
             push!(xs, x_start)
             push!(ys, f(x_start))
+            print("ys", ys, "\n")
         end
     else #if our starting point was adequate, samples from right to left
+        print("Start value was adequate \n")
         while ys[1] > 0
+        # while ys[end] > 0
             insert!(xs,1,xn)
             insert!(ys,1,f(xn))
+            print("ys ",ys[1], "\n")
             xn = xn/2
+            print("xn ", xn, "\n")
+            print("f(xn) ", f(xn), "\n")
+
+            # xn = xn/4
+            print("Generating a smaller xvalue \n")
         end
     end
     #one last check to see if it’s still above zero later on
@@ -49,7 +62,7 @@ function First_test(x_start)
     # insert!(xs,4, 95)
     # insert!(ys,4,70)
     #Use the padé to see if peaks are predicted in the area that is supposed to be convexity
-    x_pade, y_pade = Pade(xs,ys)
+    x_pade, y_pade = Pade(xs,ys,xl,xr)
     peaks = peak_finder(x_pade, y_pade)
     ########################
     ##### Some investigating needs to be done to determine what causes
@@ -84,3 +97,6 @@ function First_test(x_start)
     end
     return xs, ys, xl, xr
 end
+
+
+print("First_test ", First_test(1500), "\n")

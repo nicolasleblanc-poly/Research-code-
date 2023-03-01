@@ -59,12 +59,28 @@ function bicgstab_matrix(A,b)
 
         r_m1 = s-omega_k.*t
 
-        if norm(r_m1)-norm(r_old) < tol
-            break
+        # print("conj.(transpose(r_m1))*r_m1  ", conj.(transpose(r_m1))*r_m1 , "\n")
+        if real((conj.(transpose(r_m1))*r_m1)[1]) < tol
+        # if norm(r_m1)-norm(r_old) < tol
             print("bicgstab break \n")
+            print("real((conj.(transpose(r_m1))*r_m1)[1])",real((conj.(transpose(r_m1))*r_m1)[1]),"\n")
+            break 
         end 
 
     end
     return xk_m1
 end
+
+A = Array{Float64}(undef, 2, 2)
+A[1,1] = 4
+A[1,2] = 1
+A[2,1] = 1
+A[2,2] = 3 
+
+b = Array{Float64}(undef, 2, 1)
+b[1,1] = 1
+b[2,1] = 2
+
+print("Test ", bicgstab_matrix(A,b), "\n")
+
 end

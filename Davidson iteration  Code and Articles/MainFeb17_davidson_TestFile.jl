@@ -1,5 +1,5 @@
 module davidson_TestFile_New
-using LinearAlgebra, Random, Arpack
+using LinearAlgebra, Random, Arpack, bicgstab
 using KrylovKit
 
 function modified_gram_schmidt(A, t, index) # i
@@ -15,7 +15,8 @@ function modified_gram_schmidt(A, t, index) # i
         orth_matrix[:, vec_idx] = orth_matrix[:, vec_idx]/norm(orth_matrix[:, vec_idx])
         for span_base_idx = (vec_idx+1):num_vectors
             # perform block step
-            orth_matrix[:, span_base_idx] -= dot(orth_matrix[:, span_base_idx], orth_matrix[:, vec_idx])*orth_matrix[:, vec_idx]
+            orth_matrix[:, span_base_idx] -= dot(orth_matrix[:, span_base_idx], 
+            orth_matrix[:, vec_idx])*orth_matrix[:, vec_idx]
         end
     end
     return orth_matrix[:,end:end]
@@ -70,6 +71,12 @@ function davidson_it(A)
     # u_hat = Array{Float64}(undef, rows, 1)
     u_hat = zeros(Float64, rows, 1)
 
+    # Test matrix to see if 
+    # conj.(transpose(eig_vect_matrix))*Hk*eig_vect_matrix = A
+    eig_vect_matrix = zeros(Float64, rows, cols)
+    julia_eigvals = 0
+    julia_eigvects = 0
+
     for val = 1:10
         for i = 2:cols # Old version 
             diagonal_A = diag(A)
@@ -86,7 +93,13 @@ function davidson_it(A)
             # print("A_diagonal_matrix-theta[1]*I ", A_diagonal_matrix-theta[1]*I,"\n")
             # print("I-u_mod*conj.(transpose(u_mod)) ", I-u_mod*conj.(transpose(u_mod)),"\n")
 
-            t = inv(((I-u_mod*conj.(transpose(u_mod)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u_mod*conj.(transpose(u_mod)))))*(-r)
+            # Solve using bicgstab
+            t = bicgstab_matrix(((I-u_mod*conj.(transpose(u_mod)))*
+            (A_diagonal_matrix-real(theta[1])*I)*
+            (I-u_mod*conj.(transpose(u_mod)))),-r)
+
+            # Solve using inverse 
+            # t = inv(((I-u_mod*conj.(transpose(u_mod)))*(A_diagonal_matrix-real(theta[1])*I)*(I-u_mod*conj.(transpose(u_mod)))))*(-r)
             
             # print("size(r) ", size(r), "\n")
             # print("size(t) ", size(t), "\n")
@@ -137,13 +150,23 @@ function davidson_it(A)
             #     Hk[end, 1:end] = (conj.(transpose(vk))*Wk) # [1]
             # end
             
-            print("Julia eigvals ", eigsolve(Hk[1:i,1:i]), "\n")
+            # print("Julia eigvals ", eigsolve(Hk[1:i,1:i]), "\n")
 
-            # Compute the largest eigenpar (theta,s) of H_{k+1} 
-            # with the norm(s) = 1
-            eigvals, eigenvectors = eigs(Hk[1:i,1:i], which=:LM)
-            print("eigvals ", eigvals, "\n")
-            print("eigenvectors ", eigenvectors, "\n")
+            # # Compute the largest eigenpar (theta,s) of H_{k+1} 
+            # # with the norm(s) = 1
+            # eigvals, eigenvectors = eigs(Hk[1:i,1:i], which=:LM)
+            # print("eigvals ", eigvals, "\n")
+            # print("eigenvectors ", eigenvectors, "\n")
+
+            julia_eig_solve =  eigsolve(Hk[1:i,1:i])
+            julia_eigvals = julia_eig_solve[1]
+            julia_eigvects = julia_eig_solve[2]
+            print("Julia eigvals ", julia_eigvals, "\n")
+            print("Julia eigvectors ", julia_eigvects, "\n")
+            theta = julia_eigvals[1]
+            s =  julia_eigvects[1][:]/norm(julia_eigvects[1][:]) # Minimum eigvector
+            print("theta", theta, "\n")
+            print("s", s, "\n")
 
 
             # We only want the eigenvalue that is positive
@@ -153,22 +176,22 @@ function davidson_it(A)
             # 1. I get a singular matrix when doing the direct solve. 
             # 2. Someting I get negative eigenvalues. 
 
-            max_eigvals = 0.0 
-            for i in eachindex(eigvals) # We need the eigenvalues to be positive, right (like before)?
-                if eigvals[i] > 0 
-                    if eigvals[i] > max_eigvals
-                        max_eigvals = eigvals[i]
-                        theta = eigvals[i]
-                        position = i 
-                    end 
-                    print("position ", position, "\n")
-                end 
-            end 
-            eigenvector = eigenvectors[:,position]
-            print("theta ", theta, "\n")
-            print("eigenvector ", eigenvector, "\n")
-            s = eigenvector/norm(eigenvector) # normalized_eigenvector
-            print("s ", s, "\n")
+            # max_eigvals = 0.0 
+            # for i in eachindex(eigvals) # We need the eigenvalues to be positive, right (like before)?
+            #     if eigvals[i] > 0 
+            #         if eigvals[i] > max_eigvals
+            #             max_eigvals = eigvals[i]
+            #             theta = eigvals[i]
+            #             position = i 
+            #         end 
+            #         print("position ", position, "\n")
+            #     end 
+            # end 
+            # eigenvector = eigenvectors[:,position]
+            # print("theta ", theta, "\n")
+            # print("eigenvector ", eigenvector, "\n")
+            # s = eigenvector/norm(eigenvector) # normalized_eigenvector
+            # print("s ", s, "\n")
             
             print("Vk ", Vk, "\n")
             u = Vk[:,1:i]*s # Compute the Ritz vector u  
@@ -203,6 +226,22 @@ function davidson_it(A)
         Hk = zeros(Float64, rows, cols)
         # Hk = Array{Float64}(undef, rows, cols)
         Hk[1,1] = real(theta[1])
+
+        # Test 
+        print("julia_eigvects[:][:] ", julia_eigvects[:][:], "\n")
+        # eig_vect_matrix[:,:] = julia_eigvects[:][:]
+
+        eig_vect_matrix[:,1] = julia_eigvects[1][:]
+        eig_vect_matrix[:,2] = julia_eigvects[2][:]
+        eig_vect_matrix[:,3] = julia_eigvects[3][:]
+        print("eig_vect_matrix ", eig_vect_matrix, "\n")
+        A_test = Vk*Hk*conj.(transpose(Vk))
+
+        # A_test = conj.(transpose(eig_vect_matrix))*Hk*eig_vect_matrix
+        print("Vk*conj.(transpose(Vk)) ", conj.(transpose(Vk))*Vk, "\n")
+        print("A_test ", A_test, "\n")
+
+        print("A ", A, "\n")
         
     end
     return real(theta)
