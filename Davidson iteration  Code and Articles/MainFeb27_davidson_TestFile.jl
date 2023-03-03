@@ -24,7 +24,7 @@ using KrylovKit
 
 function modified_gram_schmidt!(Vk,n)
     num_vectors = size(Vk)[2] 
-    tol = 1e-3
+    tol = 1e-5
     nrm = norm(Vk[:,n])
     if nrm < tol
         Vk[:,n] = Vk[:,n]+rand(size(matrix)[2],1)
@@ -33,14 +33,17 @@ function modified_gram_schmidt!(Vk,n)
     # for index = 1:num_vectors
     #     Vk[:,index] = Vk[:,n] - conj.(transpose((Vk[:,1:n-1])))*Vk[:,n]
     # end 
-    for vec_idx = 1:num_vectors
-        # Vk[:, vec_idx] = Vk[:, vec_idx]/norm(Vk[:, vec_idx])
-        for span_base_idx = (vec_idx+1):num_vectors
-            # perform block step
-            Vk[:, span_base_idx] -= dot(Vk[:, span_base_idx], 
-            Vk[:, vec_idx])*Vk[:, vec_idx]
-        end
-    end
+
+    Vk[:,n] = Vk[:,n] - (Vk[:,1:n-1])*((conj.(transpose((Vk[:,1:n-1])))*Vk[:,n]))
+
+    # for vec_idx = 1:num_vectors
+    #     # Vk[:, vec_idx] = Vk[:, vec_idx]/norm(Vk[:, vec_idx])
+    #     for span_base_idx = (vec_idx+1):num_vectors
+    #         # perform block step
+    #         Vk[:, span_base_idx] -= dot(Vk[:, span_base_idx], 
+    #         Vk[:, vec_idx])*Vk[:, vec_idx]
+    #     end
+    # end
 
     # Vk[:,n] = Vk[:,n] - conj.(transpose((Vk[:,1:n-1])))*Vk[:,n]
     nrm = norm(Vk[:,n])
@@ -121,9 +124,9 @@ function davidson_it(A)
     julia_eigvects = 0
 
     for val = 1:1
-        for i = 1:cols 
-            diagonal_A = diag(A)
-            A_diagonal_matrix = Diagonal(diagonal_A)
+        for i = 2:cols 
+            # diagonal_A = diag(A)
+            # A_diagonal_matrix = Diagonal(diagonal_A)
             # print("A_diagonal_matrix ", A_diagonal_matrix, "\n")
 
             u_mod = copy(u)
@@ -139,7 +142,7 @@ function davidson_it(A)
             # Solve using bicgstab
             # This is t in the algorithm 
             t = bicgstab_matrix(((I-u_mod*conj.(transpose(u_mod)))*
-            (A_diagonal_matrix-real(theta[1])*I)*
+            (A-real(theta[1])*I)*
             (I-u_mod*conj.(transpose(u_mod)))),-r)
             # t = bicgstab_matrix(((I-u_mod*conj.(transpose(u_mod)))*
             # (A_diagonal_matrix-real(theta[1])*I)*
@@ -186,14 +189,14 @@ function davidson_it(A)
             print("OG Hk ", Hk, "\n")
             # hk is now a vector
             hk = (conj.(transpose(Vk[:,1:i]))*wk)
-            Hk[1:i,i] = hk
+            Hk[1:i,i] = hk # Column vector 
             # Hk[1:i,i] = (conj.(transpose(Vk[:,1:i]))*wk)
             print("new Hk v1 ", Hk, "\n")
 
             # If we assume that A is hermitan, we don't have index+1to calculate vk*Wk
             # for the last row of Hk. We can just take the complex conjugate of 
             # Vk*wk, which we just caculated.
-            Hk[i,1:i] = conj(transpose(hk))
+            Hk[i,1:i] = conj(transpose(hk)) # Row vector 
             # Hk[i,1:i] = conj(transpose((conj.(transpose(Vk[:,1:i]))*wk)))
             print("new Hk v2 ", Hk, "\n")
 
@@ -281,8 +284,12 @@ function davidson_it(A)
         print("eig_vect_matrix ", eig_vect_matrix, "\n")
         A_test = Vk*Hk*conj.(transpose(Vk))
 
-        # A_test = conj.(transpose(eig_vect_matrix))*Hk*eig_vect_matrix
-        print("A_test ", A_test, "\n")
+        A_test = Vk*Hk*conj.(transpose(Vk))
+        print("A_test with Hk ", A_test, "\n")
+
+        A_test_A = Vk*A*conj.(transpose(Vk))
+        print("A_test_withA ", A_test_A, "\n")
+        print("Hk ", Hk, "\n")
 
         print("A ", A, "\n")
 
@@ -316,6 +323,7 @@ A[2,3] = -1
 A[3,1] = 0
 A[3,2] = -1
 A[3,3] = 4
+A = A+conj.(transpose(A))
 # A = zeros(Int8, 3, 3)
 # A[1,1] = 2
 # A[1,2] = -1
