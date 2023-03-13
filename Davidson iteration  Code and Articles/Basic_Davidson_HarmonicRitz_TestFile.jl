@@ -235,7 +235,7 @@ end
 # as our eigenvector associate to the minimum eigenvalue
 
 # A = Array{Float64}(undef,50,50)
-A = Array{ComplexF64}(undef,50,50)
+A = Array{ComplexF64}(undef,25,25)
 # A[1,1] = 2
 # A[1,2] = -2
 # A[1,3] = 0
