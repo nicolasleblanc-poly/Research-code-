@@ -26,6 +26,8 @@ function bicgstab_matrix(A,b)
         beta = first_term*second_term
         
         pk = r_m1 + beta.*(p_m1-omega_m1.*v_m1)
+        # print("A ", A,"\n")
+        # print("pk ", pk,"\n")
         
         vk = A*pk
         # (l[1])*asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, pk)
@@ -33,6 +35,12 @@ function bicgstab_matrix(A,b)
         # alpha calculation
         # Bottom term
         bottom_term = conj.(transpose(r0))*vk
+
+        # print("bottom term ", bottom_term,"\n")
+        # print("r0 ", r0,"\n")
+        # print("vk ", vk,"\n")
+
+
         # Calculation 
         alpha = rho_k/bottom_term 
         
@@ -63,7 +71,7 @@ function bicgstab_matrix(A,b)
         if real((conj.(transpose(r_m1))*r_m1)[1]) < tol
         # if norm(r_m1)-norm(r_old) < tol
             print("bicgstab break \n")
-            print("real((conj.(transpose(r_m1))*r_m1)[1])",real((conj.(transpose(r_m1))*r_m1)[1]),"\n")
+            # print("real((conj.(transpose(r_m1))*r_m1)[1])",real((conj.(transpose(r_m1))*r_m1)[1]),"\n")
             break 
         end 
 
@@ -71,16 +79,16 @@ function bicgstab_matrix(A,b)
     return xk_m1
 end
 
-A = Array{Float64}(undef, 2, 2)
-A[1,1] = 4
-A[1,2] = 1
-A[2,1] = 1
-A[2,2] = 3 
+# A = Array{Float64}(undef, 2, 2)
+# A[1,1] = 4
+# A[1,2] = 1
+# A[2,1] = 1
+# A[2,2] = 3 
 
-b = Array{Float64}(undef, 2, 1)
-b[1,1] = 1
-b[2,1] = 2
+# b = Array{Float64}(undef, 2, 1)
+# b[1,1] = 1
+# b[2,1] = 2
 
-print("Test ", bicgstab_matrix(A,b), "\n")
+# print("Test ", bicgstab_matrix(A,b), "\n")
 
 end

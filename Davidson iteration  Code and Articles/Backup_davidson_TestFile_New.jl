@@ -167,7 +167,7 @@ function davidson_it(A)
             #     Hk[end, 1:end] = (conj.(transpose(vk))*Wk) # [1]
             # end
 
-            # Compute the largest eigenpar (theta,s) of H_{k+1} 
+            # Compute the largest eigenpair (theta,s) of H_{k+1} 
             # with the norm(s) = 1
             eigvals, eigenvectors = eigs(Hk, which=:LM)
             print("eigvals ", eigvals, "\n")
@@ -250,4 +250,5 @@ print("A ", A, "\n")
 # print(eigen(A).values)
 
 print(davidson_it(A), "\n")
+print("Julia direct solve ",eigen(A).values, "\n")
 end 
