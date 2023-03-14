@@ -338,7 +338,7 @@ print("A ", A, "\n")
 # print(A[1,:])
 # print("size(A) ", size(A)[2], "\n")
 
-# print(eigen(A).values)
+print("Davidson eigenvalues ",davidson_it(A), "\n")
+print("Julia eigenvalues ",eigen(A).values, "\n")
 
-print(davidson_it(A), "\n")
 end 

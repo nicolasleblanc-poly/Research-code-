@@ -22,18 +22,50 @@ using LinearAlgebra, Random, Arpack, KrylovKit, bicgstab, cg
 #     return orth_matrix[:,end:end]
 # end
 
-# function gram!(V) # i
-#     print("V MGS", V, "\n")
-#     nrm = norm(V[:,end])
-#     V[:,end] = V[:,end]/nrm
-#     print("V[:,1:end-1] ", V[:,1:end-1], "\n")
-#     print("V[:,end] ", V[:,end], "\n")
-#     # proj_coeff = dot(V[:,1:end-1],V[:,end])
-#     proj_coeff = conj!(tranpspose([:,1:end-1])).*V[:,end]
-#     V[:,end] = V[:,end] - proj_coeff*V[:,1:end-1]
-#     nrm = norm(V[:,end])
-#     V[:,end] = V[:,end]/nrm
-# end
+function modified_gram_schmidt!(Vk,n,t,Wk_tilde)
+    num_vectors = size(Vk)[2] 
+    tol = 1e-5
+    nrm = norm(Vk[:,n])
+    v_vect = t 
+    if nrm < tol
+        Vk[:,n] = Vk[:,n]+rand(size(Vk)[2],1)
+        modified_gram_schmidt!(Vk,n,t,Wk_tilde)
+    end 
+
+    for index = 1:n
+        v_vect = v_vect - Vk[:,index]*conj.(transpose(Wk_tilde[:,index]))*v_vect
+        # Vk[:,n] = Vk[:,n] - conj.(transpose((Vk[:,1:n-1])))*Vk[:,n]
+    end 
+    # After this loop we get t_tilde = v_vect
+    # Instead of using a variable to store this, we directly put it in Vk[:,n]
+    Vk[:,n] = v_vect
+    nrm = norm(Vk[:,n])
+    if nrm < tol
+        Vk[:,n] = Vk[:,n]+rand(size(Vk)[2],1)
+        modified_gram_schmidt!(Vk,n,t,wk_tilde)
+    end 
+    Vk[:,n] = Vk[:,n]/nrm
+
+    # The prints below are checks that everything works as it should 
+    print("norm(Vk[:,n]) ", norm(Vk[:,n]), "\n")
+
+    print("Vk[:,1]: ", Vk[:,1], "\n")
+    print("Vk[:,2]: ", Vk[:,2], "\n")
+    print("Vk[:,3]: ", Vk[:,3], "\n")
+
+    print("conj.(transpose(Vk)).*Vk: ", conj.(transpose(Vk)).*Vk, "\n")
+    print("conj.(transpose(Vk))*Vk: ", conj.(transpose(Vk))*Vk, "\n")
+    print("Vk dot Vk: ", dot(Vk,Vk), "\n")
+
+    print("1 dot 2: ", dot(Vk[:,1],Vk[:,2]), "\n")
+    print("1 dot 3: ", dot(Vk[:,1],Vk[:,3]), "\n")
+    print("2 dot 3: ", dot(Vk[:,2],Vk[:,3]), "\n")
+
+    print("Vk[:,1]", norm(Vk[:,1]), "\n")
+    print("Vk[:,2]", norm(Vk[:,2]), "\n")
+    print("Vk[:,3]", norm(Vk[:,3]), "\n")
+
+end
 
 
 function davidson_it(A)
@@ -77,6 +109,11 @@ function davidson_it(A)
     # Lk = Array{Float64}(undef, rows, cols)
     Lk[1,1] = lk
     # print("Lk ", Lk, "\n")
+
+    Wk_tilde = zeros(ComplexF64, rows, cols)
+    Wk_tilde[:,1] = wk*inv(Lk[1,1])
+    # Wk_tilde = Wk * inv(Lk)
+    # print("Wk_tilde ", Wk_tilde, "\n")
 
     Hk_hat = zeros(ComplexF64, rows, cols)
     # Hk_hat = Array{Float64}(undef, rows, cols)
@@ -126,51 +163,44 @@ function davidson_it(A)
         real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
         (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])),-r)
 
-        # What if we still take the diagonal of A but don't make the last 
-        # element of u_tilde and u_hat equal to 0.
-        # t = bicgstab_matrix(((I-(u_tilde*conj.(transpose(u_hat)))/
-        # (conj.(transpose(u_hat))*u_tilde)[1])*(A_diagonal_matrix-
-        # real(theta_tilde[1])*I)*(I-(u_tilde*conj.(transpose(u_hat)))/
-        # (conj.(transpose(u_hat))*u_tilde)[1])),-r)
+        """
+        Biorthogonolize t against Vk and Wk method .
+        This method becomes very unstable for large matrices.
+        We therefore need to use another method, which can be done by using 
+        Wk_tilde = Wk*(L_k^*)^{-1}. This method allows us to use modified 
+        Gram-Schmidt as an orthogonalization method. 
+        """
+        modified_gram_schmidt!(Vk,i,t,Wk_tilde)
 
-        # 2. Here we only use a part of A and 
+        # t_tilde = t - Vk[:,1:i-1]*inv(Lk[1:i-1,1:i-1])*
+        # conj.(transpose(Wk[:,1:i-1]))*t
+        # Here's the other method to find t that should be more stable for 
+        # larger systems.
+        # Instead of explicity having a variable to t_tilde and then normalizing
+        # it, I add the already normalized vector to Vk.
+    
 
-        # Solve for t using cg 
-        # t = cg_matrix(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-        # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
-        # real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-        # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])),-r)
-        
-        # Solve for t using inverse method 
-        # t = inv(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-        # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
-        # real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-        # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])))*(-r)
-
-        # print("t ", t, "\n")
-        # print("Lk ", Lk[1:i-1,1:i-1], "\n")
-
-        t_tilde = t - Vk[:,1:i-1]*inv(Lk[1:i-1,1:i-1])*
-        conj.(transpose(Wk[:,1:i-1]))*t
         # print("t_tilde ", t_tilde, "\n")
-        vk = t_tilde/norm(t_tilde) # v_{k+1}
+        # vk = t_tilde/norm(t_tilde) # v_{k+1}
+        # Vk[:,i] = vk # Add the new vk to the Vk matrix -> V_{k+1}
         Vk[:,i] = vk # Add the new vk to the Vk matrix -> V_{k+1}
 
         # New wk that will be added as a new column to Wk
-        wk = A*vk # w_{k+1} = A*v_{k+1}
+        wk_tilde = A*Vk[:,i] # w_{k+1} = A*v_{k+1}
+        # wk_tilde = A*vk # w_{k+1} = A*v_{k+1}
         # print("wk ", wk, "\n")
         # print("Wk ", Wk, "\n")
         # Expand W_k with this vector to W_{k+1}
-        Wk[:,i] = wk # W_{k+1}
+        Wk_tilde[:,i] = wk_tilde # W_{k+1}
         # print("new Wk ", Wk, "\n")
 
-        lk = conj.(transpose(wk))*Vk[:,1:i]
+        lk = conj.(transpose(wk_tilde))*Vk[:,1:i]
         # print("lk ", lk, "\n")
         # print("Lk ", Lk, "\n")
         # Expand L_k with this vector to W_{k+1}
         Lk[i,1:i] = lk # Row of matrix -> L_{k+1}
 
-        hk = conj.(transpose(wk))*Wk[:,1:i]
+        hk = conj.(transpose(wk_tilde))*Wk_tilde[:,1:i]
         # H_hat_{k+1}
         Hk_hat[i,1:i] = hk # Row of matrix
         Hk_hat[1:i,i] = conj.(transpose(hk)) # Column of matrix
@@ -178,7 +208,7 @@ function davidson_it(A)
 
         Hk_tilde = inv(Lk[1:i,1:i])*Hk_hat[1:i,1:i] # H_tilde_{k+1}
 
-        print("size(Hk_tilde) ", size(Hk_tilde), "⤱")
+        print("size(Hk_tilde) ", size(Hk_tilde), "\n")
         
 
         # julia_eig_solve =  eigsolve(Hk_hat[1:i,1:i]) # Old, this was a mistake
@@ -235,7 +265,7 @@ end
 # as our eigenvector associate to the minimum eigenvalue
 
 # A = Array{Float64}(undef,50,50)
-A = Array{ComplexF64}(undef,25,25)
+A = Array{ComplexF64}(undef,3,3)
 # A[1,1] = 2
 # A[1,2] = -2
 # A[1,3] = 0
