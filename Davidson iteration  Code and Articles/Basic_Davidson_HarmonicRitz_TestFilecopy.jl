@@ -46,7 +46,7 @@ function davidson_it(A)
     # m = 20 # Amount of iterations of the inner loop
 
     # Part 1. Setup 
-    tol = 1e-12 # Tolerance for which the program will converge 
+    tol = 1e-6 # Tolerance for which the program will converge 
 
     rows = size(A)[1]
     cols = size(A)[2]
@@ -109,8 +109,8 @@ function davidson_it(A)
     for i = 1:cols # Iterate through all of the columns 
         print("i ", i, "\n")
 
-        diagonal_A = diag(A)
-        A_diagonal_matrix = Diagonal(diagonal_A)
+        # diagonal_A = diag(A)
+        # A_diagonal_matrix = Diagonal(diagonal_A)
         # print("A_diagonal_matrix ", A_diagonal_matrix, "\n")
 
         u_tilde_mod = copy(u_tilde)
@@ -122,11 +122,10 @@ function davidson_it(A)
         u_hat_mod[end] = 0.0
 
         # Solve for t using bicgstab 
-
         # 1. Here we using only the diagonal of A and we make the 
         # last element of u_tilde and u_hat equal to 0. 
         t = bicgstab_matrix(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-        (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
+        (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A-
         real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
         (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])),-r)
 
@@ -182,7 +181,7 @@ function davidson_it(A)
 
         Hk_tilde = inv(Lk[1:i,1:i])*Hk_hat[1:i,1:i] # H_tilde_{k+1}
 
-        print("size(Hk_tilde) ", size(Hk_tilde), "⤱")
+        print("size(Hk_tilde) ", size(Hk_tilde), "\n")
         
 
         # julia_eig_solve =  eigsolve(Hk_hat[1:i,1:i]) # Old, this was a mistake
@@ -204,7 +203,8 @@ function davidson_it(A)
             # print("i ", i, "\n")
             # print("min_eigval ", min_eigval, "\n")
         end 
-        s =  julia_eigvects[position][:] # Minimum eigvector
+        # Normalized minimum eigvector
+        s =  julia_eigvects[position][:]/norm(julia_eigvects[position][:]) 
 
         # print("Julia eigvals ", julia_eigvals, "\n")
         # print("Julia eigvectors ", julia_eigvects, "\n")
@@ -216,6 +216,8 @@ function davidson_it(A)
         # Compute the harmonic Ritz vector 
         u_tilde = (Vk[:,1:i]*s)/norm(Vk[:,1:i]*s)
         u_hat = A*u_tilde 
+        print("u_hat ", u_hat, "\n")
+        print("u_hat_test ", (Wk[1:i,1:i]*s)/(norm(Vk[1:i,1:i]*s)), "\n")
         # Should be equal to (Wk*s)/norm(Vk*s)
         
         # Compute the residual 
@@ -230,6 +232,7 @@ function davidson_it(A)
             print("Exited the loop using break \n")
             break
         end 
+        print("conj(transpose(Vk))*Vk ", conj(transpose(Vk))*Vk, "\n")
         
     end
     return real(theta_tilde)
@@ -239,7 +242,7 @@ end
 # as our eigenvector associate to the minimum eigenvalue
 
 # A = Array{Float64}(undef,50,50)
-A = Array{ComplexF64}(undef,25,25)
+A = Array{ComplexF64}(undef,3,3)
 # A[1,1] = 2
 # A[1,2] = -2
 # A[1,3] = 0
@@ -261,7 +264,7 @@ A = (A+conj.(transpose(A)))/2
 # A[3,1] = 0
 # A[3,2] = -1
 # A[3,3] = 2
-# print("A ", A, "\n")
+print("A ", A, "\n")
 # print(A[1,:])
 # print("size(A) ", size(A)[2], "\n")
 

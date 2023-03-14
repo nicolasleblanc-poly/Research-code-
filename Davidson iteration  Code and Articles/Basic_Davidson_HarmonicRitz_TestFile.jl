@@ -26,13 +26,16 @@ function modified_gram_schmidt!(Vk,n,t,Wk_tilde)
     num_vectors = size(Vk)[2] 
     tol = 1e-5
     nrm = norm(Vk[:,n])
-    v_vect = t 
+    v_vect = t/norm(t) # Normalize t 
+    print("n ", n, "\n")
+    print("v_vect ", v_vect, "\n")
+    # print("norm(t) ", norm(t), "\n")
     if nrm < tol
         Vk[:,n] = Vk[:,n]+rand(size(Vk)[2],1)
         modified_gram_schmidt!(Vk,n,t,Wk_tilde)
     end 
 
-    for index = 1:n
+    for index = 1:n-1
         v_vect = v_vect - Vk[:,index]*conj.(transpose(Wk_tilde[:,index]))*v_vect
         # Vk[:,n] = Vk[:,n] - conj.(transpose((Vk[:,1:n-1])))*Vk[:,n]
     end 
@@ -56,6 +59,7 @@ function modified_gram_schmidt!(Vk,n,t,Wk_tilde)
     print("conj.(transpose(Vk)).*Vk: ", conj.(transpose(Vk)).*Vk, "\n")
     print("conj.(transpose(Vk))*Vk: ", conj.(transpose(Vk))*Vk, "\n")
     print("Vk dot Vk: ", dot(Vk,Vk), "\n")
+    print("conj(transpose(Vk))*Vk: ", conj(transpose(Vk))*Vk, "\n")
 
     print("1 dot 2: ", dot(Vk[:,1],Vk[:,2]), "\n")
     print("1 dot 3: ", dot(Vk[:,1],Vk[:,3]), "\n")
@@ -78,7 +82,7 @@ function davidson_it(A)
     # m = 20 # Amount of iterations of the inner loop
 
     # Part 1. Setup 
-    tol = 1e-12 # Tolerance for which the program will converge 
+    tol = 1e-6 # Tolerance for which the program will converge 
 
     rows = size(A)[1]
     cols = size(A)[2]
@@ -170,20 +174,18 @@ function davidson_it(A)
         Wk_tilde = Wk*(L_k^*)^{-1}. This method allows us to use modified 
         Gram-Schmidt as an orthogonalization method. 
         """
-        modified_gram_schmidt!(Vk,i,t,Wk_tilde)
-
-        # t_tilde = t - Vk[:,1:i-1]*inv(Lk[1:i-1,1:i-1])*
-        # conj.(transpose(Wk[:,1:i-1]))*t
         # Here's the other method to find t that should be more stable for 
         # larger systems.
         # Instead of explicity having a variable to t_tilde and then normalizing
         # it, I add the already normalized vector to Vk.
-    
+        modified_gram_schmidt!(Vk,i,t,Wk_tilde)
 
+        # Here's the basic method 
+        # t_tilde = t - Vk[:,1:i-1]*inv(Lk[1:i-1,1:i-1])*
+        # conj.(transpose(Wk[:,1:i-1]))*t
         # print("t_tilde ", t_tilde, "\n")
         # vk = t_tilde/norm(t_tilde) # v_{k+1}
         # Vk[:,i] = vk # Add the new vk to the Vk matrix -> V_{k+1}
-        Vk[:,i] = vk # Add the new vk to the Vk matrix -> V_{k+1}
 
         # New wk that will be added as a new column to Wk
         wk_tilde = A*Vk[:,i] # w_{k+1} = A*v_{k+1}
@@ -258,6 +260,7 @@ function davidson_it(A)
         end 
         
     end
+    print("conj(transpose(Vk))*Vk ", conj(transpose(Vk))*Vk, "\n")
     return real(theta_tilde)
 end 
 

@@ -147,6 +147,7 @@ function jacDavRitz(basis::Array{ComplexF64}, hesse::Array{ComplexF64},
 		resVec = (theta * ritzVec) .- outVec
 		# add tolerance check here
 	end
+	print("conj(transpose(basis))*basis ",conj(transpose(basis))*basis,"\n")
 
 	return (real(theta), ritzVec)
 end
