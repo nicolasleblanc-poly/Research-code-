@@ -30,24 +30,28 @@ function modified_gram_schmidt!(Vk,n,t,Wk_tilde)
     print("n ", n, "\n")
     print("v_vect ", v_vect, "\n")
     # print("norm(t) ", norm(t), "\n")
-    if nrm < tol
-        Vk[:,n] = Vk[:,n]+rand(size(Vk)[2],1)
-        modified_gram_schmidt!(Vk,n,t,Wk_tilde)
-    end 
+
+    # if nrm < tol
+    #     # Vk[:,n] = Vk[:,n]+rand(size(Vk)[2],1)
+    #     Vk[:,n] = Vk[:,n]+rand(size(Vk)[2],1)
+    #     modified_gram_schmidt!(Vk,n,t,Wk_tilde)
+    # end 
 
     for index = 1:n-1
         v_vect = v_vect - Vk[:,index]*conj.(transpose(Wk_tilde[:,index]))*v_vect
+        v_vect = v_vect/norm(v_vect)
+        print("norm(v_vect) ", norm(v_vect), "\n")
         # Vk[:,n] = Vk[:,n] - conj.(transpose((Vk[:,1:n-1])))*Vk[:,n]
     end 
     # After this loop we get t_tilde = v_vect
     # Instead of using a variable to store this, we directly put it in Vk[:,n]
     Vk[:,n] = v_vect
-    nrm = norm(Vk[:,n])
-    if nrm < tol
-        Vk[:,n] = Vk[:,n]+rand(size(Vk)[2],1)
-        modified_gram_schmidt!(Vk,n,t,wk_tilde)
-    end 
-    Vk[:,n] = Vk[:,n]/nrm
+    # nrm = norm(Vk[:,n])
+    # if nrm < tol
+    #     Vk[:,n] = Vk[:,n]+rand(size(Vk)[2],1)
+    #     modified_gram_schmidt!(Vk,n,t,wk_tilde)
+    # end 
+    # Vk[:,n] = Vk[:,n]/nrm
 
     # The prints below are checks that everything works as it should 
     print("norm(Vk[:,n]) ", norm(Vk[:,n]), "\n")
@@ -82,7 +86,7 @@ function davidson_it(A)
     # m = 20 # Amount of iterations of the inner loop
 
     # Part 1. Setup 
-    tol = 1e-6 # Tolerance for which the program will converge 
+    tol = 1e-10 # Tolerance for which the program will converge 
 
     rows = size(A)[1]
     cols = size(A)[2]
@@ -143,7 +147,7 @@ function davidson_it(A)
     julia_eigvects = 0
 
     # Part 2: Inner loop 
-    for i = 1:cols # Iterate through all of the columns 
+    for i = 2:cols # Iterate through all of the columns 
         print("i ", i, "\n")
 
         diagonal_A = diag(A)
@@ -163,7 +167,7 @@ function davidson_it(A)
         # 1. Here we using only the diagonal of A and we make the 
         # last element of u_tilde and u_hat equal to 0. 
         t = bicgstab_matrix(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-        (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
+        (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A-
         real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
         (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])),-r)
 
@@ -232,14 +236,17 @@ function davidson_it(A)
             # print("i ", i, "\n")
             # print("min_eigval ", min_eigval, "\n")
         end 
-        s =  julia_eigvects[position][:] # Minimum eigvector
+        # s =  julia_eigvects[position][:] # Minimum eigvector
+        # print("s1 ", s, "\n")
+        s =  julia_eigvects[:][position] # Minimum eigvector
 
-        # print("Julia eigvals ", julia_eigvals, "\n")
-        # print("Julia eigvectors ", julia_eigvects, "\n")
+
+        print("Julia eigvals ", julia_eigvals, "\n")
+        print("Julia eigvectors ", julia_eigvects, "\n")
         # theta_tilde = julia_eigvals[end]
         # s =  julia_eigvects[end][:] # Minimum eigvector
         print("theta_tilde ", theta_tilde, "\n")
-        # print("s ", s, "\n")
+        print("s ", s, "\n")
         
         # Compute the harmonic Ritz vector 
         u_tilde = (Vk[:,1:i]*s)/norm(Vk[:,1:i]*s)
@@ -269,17 +276,17 @@ end
 
 # A = Array{Float64}(undef,50,50)
 A = Array{ComplexF64}(undef,3,3)
-# A[1,1] = 2
-# A[1,2] = -2
-# A[1,3] = 0
-# A[2,1] = -1
-# A[2,2] = 3
-# A[2,3] = -1 
-# A[3,1] = 0
-# A[3,2] = -1
-# A[3,3] = 4
-rand!(A)
-A = (A+conj.(transpose(A)))/2
+A[1,1] = 2
+A[1,2] = -2
+A[1,3] = 0
+A[2,1] = -1
+A[2,2] = 3
+A[2,3] = -1 
+A[3,1] = 0
+A[3,2] = -1
+A[3,3] = 4
+# rand!(A)
+# A = (A+conj.(transpose(A)))/2
 # A = zeros(Int8, 3, 3)
 # A[1,1] = 2
 # A[1,2] = -1
