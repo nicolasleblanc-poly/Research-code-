@@ -86,7 +86,7 @@ function davidson_it(A)
     # m = 20 # Amount of iterations of the inner loop
 
     # Part 1. Setup 
-    tol = 1e-10 # Tolerance for which the program will converge 
+    tol = 1e-6 # Tolerance for which the program will converge 
 
     rows = size(A)[1]
     cols = size(A)[2]
@@ -96,7 +96,7 @@ function davidson_it(A)
     # print("v ", v, "\n")
 
     vk = v/norm(v) # Vector 
-    wk = A*v # Vector 
+    wk = A*vk # Vector 
     lk = (conj.(transpose(wk))*vk)[1] # Number
     hk = (conj.(transpose(wk))*wk)[1] # Number
     # print("hk ", hk, "\n")
