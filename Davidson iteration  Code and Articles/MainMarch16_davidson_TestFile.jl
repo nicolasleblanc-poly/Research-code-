@@ -208,7 +208,7 @@ function davidson_it(A)
         print("u check ", u, "\n")
         print("r check ", r, "\n")
 
-        t = bicgstab_matrix(A,theta,u,r) # Sean's code 
+        t = bicgstab_matrix_ritz(A,theta,u,r) # Sean's code 
         # t = bicgstab_matrix(((I-u_mod*conj.(transpose(u_mod)))*
         # (A_diagonal_matrix-real(theta[1])*I)*
         # (I-u_mod*conj.(transpose(u_mod)))),-r)

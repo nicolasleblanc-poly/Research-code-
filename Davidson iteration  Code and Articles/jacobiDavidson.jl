@@ -26,8 +26,12 @@ function bad_bicgstab_matrix(A, theta, u, b)
         # Calculation 
         beta = first_term*second_term
         pk = r_m1 .+ beta.*(p_m1-omega_m1.*v_m1)
-        pkPrj = projVec(dim, u, pk)
+
+		# We are essentially calculating vk = A*pk here
+        pkPrj = projVec(dim, u, pk) # 
         vk = projVec(dim, u, A * pkPrj .- (theta .* pkPrj))
+
+
         # (l[1])*asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, pk)
         # alpha calculation
         # Bottom term
@@ -39,8 +43,11 @@ function bad_bicgstab_matrix(A, theta, u, b)
         # If h is accurate enough, then set xk=h and quantity
         # What does accurate enough mean?
         s = r_m1 - alpha.*vk
+
+		# We are essentially calculating t = A*s here
         bPrj = projVec(dim, u, b) 
         t = projVec(dim, u, A * bPrj .- (theta .* bPrj))
+
         # (l[1])*asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, s)
         # omega_k calculation 
         # Top term 

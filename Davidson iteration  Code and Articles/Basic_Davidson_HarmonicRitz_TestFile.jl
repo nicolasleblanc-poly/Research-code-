@@ -96,7 +96,7 @@ function davidson_it(A)
     # print("v ", v, "\n")
 
     vk = v/norm(v) # Vector 
-    wk = A*v # Vector 
+    wk = A*vk # Vector 
     lk = (conj.(transpose(wk))*vk)[1] # Number
     hk = (conj.(transpose(wk))*wk)[1] # Number
     # print("hk ", hk, "\n")
