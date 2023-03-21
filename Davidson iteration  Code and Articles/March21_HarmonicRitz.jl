@@ -1,4 +1,4 @@
-module Davidson_HarmonizRitz_TestFile
+# module Davidson_HarmonizRitz_TestFile
 using LinearAlgebra, Random, Arpack, KrylovKit, bicgstab, cg
 
 @inline function projVec(dim::Integer, pVec::Vector{T}, sVec::Array{T})::Array{T} where T <: Number
@@ -61,8 +61,6 @@ function bicgstab_matrix_ritz(A, theta, u, b)
     return xk_m1
 end
 
-
-
 function davidson_it(A)
     """
     This function is the Davidson iteration algorithm. It is a hopefully better
@@ -100,10 +98,6 @@ function davidson_it(A)
     Wk[:,1] = wk
     # print("Wk ", Wk, "\n")
     
-    Lk = zeros(ComplexF64, rows, cols)
-    # Lk = Array{Float64}(undef, rows, cols)
-    Lk[1,1] = lk
-    # print("Lk ", Lk, "\n")
 
     Wk_tilde = zeros(ComplexF64, rows, cols)
     # Wk_tilde = Wk * inv(Lk)
@@ -120,11 +114,13 @@ function davidson_it(A)
     u_hat = wk # Vector 
     # print("u_tilde ", u_tilde, "\n")
     # print("u_hat ", u_hat, "\n")
-    theta_tilde = hk/lk # Number 
+    theta_tilde = hk # Number 
     r = u_hat - real(theta_tilde)*u_tilde # Vector
     # print("r ", r, "\n")
 
     t = zeros(ComplexF64, rows, 1)
+
+    z = A*u_tilde
 
     # Test matrix to see if 
     # conj.(transpose(eig_vect_matrix))*Hk_hat*eig_vect_matrix = A
@@ -140,73 +136,64 @@ function davidson_it(A)
         # A_diagonal_matrix = Diagonal(diagonal_A)
         # print("A_diagonal_matrix ", A_diagonal_matrix, "\n")
 
-        u_tilde_mod = copy(u_tilde)
-        # print("u_mod[end:end,1] ", u_mod[end:end,1], "\n")
-        u_tilde_mod[end] = 0.0
+        # u_tilde_mod = copy(u_tilde)
+        # # print("u_mod[end:end,1] ", u_mod[end:end,1], "\n")
+        # u_tilde_mod[end] = 0.0
 
-        u_hat_mod = copy(u_hat)
-        # print("u_mod[end:end,1] ", u_mod[end:end,1], "\n")
-        u_hat_mod[end] = 0.0
+        # u_hat_mod = copy(u_hat)
+        # # print("u_mod[end:end,1] ", u_mod[end:end,1], "\n")
+        # u_hat_mod[end] = 0.0
+
+        z_mod[end] = 0.0
 
         # Solve for t using bicgstab 
         # 1. Here we using only the diagonal of A and we make the 
         # last element of u_tilde and u_hat equal to 0. 
-        t = bicgstab_matrix(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-        (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A-
-        real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-        (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])),-r)
+        t = bicgstab_matrix(((I-(z_mod*conj.(transpose(z_mod))))*(A-
+        real(theta_tilde[1])*I)*(I-Vk*s*conj.(transpose(z_mod))*A)),
+        theta_tilde*wk)
 
-        # What if we still take the diagonal of A but don't make the last 
-        # element of u_tilde and u_hat equal to 0.
-        # t = bicgstab_matrix(((I-(u_tilde*conj.(transpose(u_hat)))/
-        # (conj.(transpose(u_hat))*u_tilde)[1])*(A_diagonal_matrix-
-        # real(theta_tilde[1])*I)*(I-(u_tilde*conj.(transpose(u_hat)))/
-        # (conj.(transpose(u_hat))*u_tilde)[1])),-r)
+        # MGS (TBD)
+        # gramSchmidt!(Vk, i) # Sean's code 
 
-        # 2. Here we only use a part of A and 
-
-        # Solve for t using cg 
-        # t = cg_matrix(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-        # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
-        # real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-        # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])),-r)
-        
-        # Solve for t using inverse method 
-        # t = inv(((I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-        # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])*(A_diagonal_matrix-
-        # real(theta_tilde[1])*I)*(I-(u_tilde_mod*conj.(transpose(u_hat_mod)))/
-        # (conj.(transpose(u_hat_mod))*u_tilde_mod)[1])))*(-r)
-
-        # print("t ", t, "\n")
-        # print("Lk ", Lk[1:i-1,1:i-1], "\n")
-
-        t_tilde = t - Vk[:,1:i-1]*inv(Lk[1:i-1,1:i-1])*
-        conj.(transpose(Wk[:,1:i-1]))*t
-        # print("t_tilde ", t_tilde, "\n")
-        vk = t_tilde/norm(t_tilde) # v_{k+1}
-        Vk[:,i] = vk # Add the new vk to the Vk matrix -> V_{k+1}
+        # t_tilde = t - Vk[:,1:i-1]*inv(Lk[1:i-1,1:i-1])*
+        # conj.(transpose(Wk[:,1:i-1]))*t
+        # # print("t_tilde ", t_tilde, "\n")
+        # vk = t_tilde/norm(t_tilde) # v_{k+1}
+        # Vk[:,i] = vk # Add the new vk to the Vk matrix -> V_{k+1}
 
         # New wk that will be added as a new column to Wk
-        wk = A*vk # w_{k+1} = A*v_{k+1}
+        wk = A*t # w_{k+1} = A*v_{k+1}
         # print("wk ", wk, "\n")
         # print("Wk ", Wk, "\n")
-        # Expand W_k with this vector to W_{k+1}
-        Wk[:,i] = wk # W_{k+1}
+        
         # print("new Wk ", Wk, "\n")
 
-        lk = conj.(transpose(wk))*Vk[:,1:i]
-        # print("lk ", lk, "\n")
-        # print("Lk ", Lk, "\n")
-        # Expand L_k with this vector to W_{k+1}
-        Lk[i,1:i] = lk # Row of matrix -> L_{k+1}
+        wk_tilde = wk - Wk*conj.(transpose(Wk))*wk
+        # Expand W_k with this vector to W_{k+1}
+        Wk[:,i] = wk_tilde/norm(wk_tilde) # W_{k+1}
 
-        hk = conj.(transpose(wk))*Wk[:,1:i]
-        # H_hat_{k+1}
-        Hk_hat[i,1:i] = hk # Row of matrix
-        Hk_hat[1:i,i] = conj.(transpose(hk)) # Column of matrix
-        # print("Hk_hat ", Hk_hat, "\n")
+        t_tilde = t - Vk*conj.(transpose(Wk))*wk
+        vk = t_tilde/norm(wk_tilde)
+        Vk[:,i] = vk # Add the new vk to the Vk matrix -> V_{k+1}
+        Hk_tilde = inv(conj.(transpose(Wk)*Vk))
+        # Hk_tilde = (W_k*Vk)^{-1}
+        # It is not necessary to invert W_k*Vk since the harmonic Ritz values
+        # are simply the inverses of the eigenvalues of W_k*Vk.
 
-        Hk_tilde = inv(Lk[1:i,1:i])*Hk_hat[1:i,1:i] # H_tilde_{k+1}
+        # lk = conj.(transpose(wk))*Vk[:,1:i]
+        # # print("lk ", lk, "\n")
+        # # print("Lk ", Lk, "\n")
+        # # Expand L_k with this vector to W_{k+1}
+        # Lk[i,1:i] = lk # Row of matrix -> L_{k+1}
+
+        # hk = conj.(transpose(wk))*Wk[:,1:i]
+        # # H_hat_{k+1}
+        # Hk_hat[i,1:i] = hk # Row of matrix
+        # Hk_hat[1:i,i] = conj.(transpose(hk)) # Column of matrix
+        # # print("Hk_hat ", Hk_hat, "\n")
+
+        # Hk_tilde = inv(Lk[1:i,1:i])*Hk_hat[1:i,1:i] # H_tilde_{k+1}
 
         print("size(Hk_tilde) ", size(Hk_tilde), "\n")
         
@@ -302,5 +289,4 @@ print("A ", A, "\n")
 
 print("Davidson minimum positive eigenvalue ",davidson_it(A), "\n")
 print("Julia direct solve ",eigen(A).values, "\n")
-end 
-
+# end 

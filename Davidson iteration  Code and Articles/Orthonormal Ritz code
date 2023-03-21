@@ -1,0 +1,50 @@
+Orthogonal basis construction
+
+
+1. Start: Choose an initial nontrivial vector v 
+- Compute the following:
+v_1 = v/norm2(v)
+w_1=A*v_1
+h_11
+
+- Set:
+V_1 = [v_1]
+W_1 = [w_1]
+l=2
+H_1_hat = [h_11]
+u_tilde = v_1
+u_hat = w_1
+theta_tilde = h_11
+
+- Compute r = u_hat - theta_tilde*u_tilde 
+
+2. Iterate: Until convergence do:
+
+3. Inner loop: For k = l,...,m-1 do:
+- Solve approximately t perpendicular to A*u_k_tilde
+
+(I-zz^*)(A^{-1}-theta_k_tilde^{-1} I)(I-zz^*)At = -w
+or if we want to avoid working with A^{-1}, we can do:
+(I-zz^*)(A-theta_k_tilde I)(I-V_k s z^* A)t = theta_k_tilde w
+
+where z = A*u_k_tilde
+
+- Modified Gram-Schmidt t against (TBD)
+Do we do like for the normal Ritz code but with A*Vk instead of Vk?
+Not too sure why MGS is really needed here.
+
+- Compute w_{k} = A t 
+
+- Compute w_{k}_tilde = w_{k}-W_{k} W_{k}^* w_{k} and w_{k+1}=w_tilde/norm2(w_tilde). Add w_{k+1} to W_k to get W_{k+1}
+
+- Compute t_tilde = t - V_k W_k^* w_k and v_{k+1} = t_tilde/norm2(w_tilde). Add v_{k+1} to V_k to get V_{k+1}. 
+
+- Compute H_k_tilde = (W_k^* V_k)^{-1}, which is the last row vector of H_{k+1}_tilde. The last column vector is the complex conjugate of the row vector juste calculed.
+
+- Compute the smallest eigenpair (theta_tilde,s) of H_{k+1}_tilde
+
+- Compute the harmonic Ritz vector u_tilde = V_{k+1}s/norm2(V_{k+1}*s), 
+compute u_hat = A*u_tilde and the associated residual vector r = u_hat-theta_tilde*u_tilde
+
+- Test for convergence. Stop if satisfied. 
+

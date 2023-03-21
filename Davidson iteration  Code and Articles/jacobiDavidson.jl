@@ -150,6 +150,7 @@ function jacDavRitz(basis::Array{ComplexF64}, hesse::Array{ComplexF64},
         print("resVec check ", resVec, "\n")
 
 		# Jacobi-Davidson direction
+		# Inputs of the bicgstab function: bad_bicgstab_matrix(A, theta, u, b)
 		basis[:, itr] = bad_bicgstab_matrix(opt, theta, ritzVec, resVec)
 		
 		print("tsolve ", basis[:, itr], "\n")
