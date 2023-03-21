@@ -1,5 +1,5 @@
 # module Davidson_HarmonizRitz_TestFile
-using LinearAlgebra, Random, Arpack, KrylovKit, bicgstab, cg
+using LinearAlgebra, Random, Arpack, KrylovKit # , bicgstab, cg
 
 @inline function projVec(dim::Integer, pVec::Vector{T}, sVec::Array{T})::Array{T} where T <: Number
 
@@ -119,6 +119,8 @@ function davidson_it(A)
     # print("r ", r, "\n")
 
     t = zeros(ComplexF64, rows, 1)
+    s = zeros(ComplexF64, rows, 1)
+    rand!(s)
 
     z = A*u_tilde
 
@@ -144,14 +146,22 @@ function davidson_it(A)
         # # print("u_mod[end:end,1] ", u_mod[end:end,1], "\n")
         # u_hat_mod[end] = 0.0
 
+        z_mod = copy(z)
         z_mod[end] = 0.0
 
         # Solve for t using bicgstab 
         # 1. Here we using only the diagonal of A and we make the 
         # last element of u_tilde and u_hat equal to 0. 
-        t = bicgstab_matrix(((I-(z_mod*conj.(transpose(z_mod))))*(A-
-        real(theta_tilde[1])*I)*(I-Vk*s*conj.(transpose(z_mod))*A)),
+        # t = bicgstab_matrix_ritz(((I-(z_mod*conj.(transpose(z_mod))))*(A-
+        # real(theta_tilde[1])*I)*(I-Vk*s*conj.(transpose(z_mod))*A)),theta_tilde,z,
+        # theta_tilde*wk)
+        
+        # Not sure about this... Ask Sean about how his changes to my bicgstab
+        # work. 
+        t = bicgstab_matrix_ritz(((I-(z_mod*conj.(transpose(z_mod))))*(A-
+        real(theta_tilde[1])*I)*(I-Vk*s*conj.(transpose(z_mod))*A)),theta_tilde,z,
         theta_tilde*wk)
+        # bicgstab_matrix_ritz(A, theta, u, b)
 
         # MGS (TBD)
         # gramSchmidt!(Vk, i) # Sean's code 
