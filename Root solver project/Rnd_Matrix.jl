@@ -5,15 +5,15 @@ function indefinite(n) # n is the size of the output matrix
     # print("1 \n")
     bool = false
     while bool == false
-        n_p = 0 #number of positive eigenvalues
-        n_n = 0 #number of negative eigenvalues
-        #construct the matrix
+        n_p = 0 # Number of positive eigenvalues
+        n_n = 0 # Number of negative eigenvalues
+        # Construct the matrix
         A_0 = rand(n,n)
         Ap = A_0 + adjoint(A_0)
         L = Diagonal(rand(-10:10, n,n))
         global A = Ap + L
         # print("A ", A, "\n")
-        #check eigenvalue to see if is it indefinite
+        # Check eigenvalue to see if is it indefinite
         eig = eigvals(A)
         for i in eig
             if i < 0
@@ -38,10 +38,10 @@ function definite(n)
     R = rand(n,n)
     L = LowerTriangular(R)
     A = adjoint(L)*L
-    A = A+ 0.01*I #peak disparity factor
+    A = A+ 0.01*I # Peak disparity factor
     return A
 end
-end
+
 #end of random matrix generator module
 
 # n = 100
@@ -49,3 +49,15 @@ end
 # A_1 = Random_Matrix.definite(n)
 # s_0 = rand(n,1)
 # s_1 = rand(n,1)
+
+n = 15
+A_0 = indefinite(n)
+A_1 = definite(n)
+s_0 = rand(n,1)
+s_1 = rand(n,1)
+println(A_0)
+println(A_1)
+println(s_0)
+println(s_1)
+
+end
