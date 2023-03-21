@@ -193,6 +193,7 @@ function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
 
     local px
     if isempty(rebuild_with)== true
+        print("Sampling \n")
         px = [i for i in range(xl, xr, N)]
         approx = zeros(length(px))
         # approx = map(rebuild, px, l, P)
@@ -200,6 +201,7 @@ function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
             approx[i] = rebuild(px[i], l, P, X)
         end 
     else
+        print("Don't need to resample everthing \n")
         px = rebuild_with
         print("px ", px, "\n")
         # approx = map(rebuild, px, l, P)
@@ -211,9 +213,10 @@ function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
 end
 
 function rebuild(x,l,P,X)  # Rebuild the approximation from the little blocks
-    # print("x ", x, "\n")
-    # print("l ", l, "\n")
-    # print("P ", P, "\n")
+    print("x ", x, "\n")
+    print("l ", l, "\n")
+    print("P ", P, "\n")
+    print("X ", X, "\n")
 
     A = zeros(l)
     B = zeros(l)
@@ -297,8 +300,8 @@ function First_test(x_start)
     print("ys ", ys, "\n")
     
     x_pade, y_pade = Pade(xs,ys)
-    print("x_pade ", x_pade, "\n")
-    print("y_pade ", y_pade, "\n")
+    # print("x_pade ", x_pade, "\n")
+    # print("y_pade ", y_pade, "\n")
     peaks = peak_finder(x_pade, y_pade)
 
     ########################
@@ -349,6 +352,13 @@ end
 
 
 ###########################Bissection root finding#############################
+"""
+The code was modified to access the Padé approximant constructed from
+the already sampled points. The issue is that for every evaluation of the
+function, the Padé approximant is rebuilt and reevaluated. This is because
+of the way the Padé approximant code was written. This could be made
+much more efficient.
+"""
 # TO DO : ______________
 # Could be rewritten better, modified it to work with the Padé approx
 ################################
@@ -357,13 +367,19 @@ end
 # x2 : starting point to the right
 # err: Maximum error we want between the actual zero and the approximated one
 # N: Maximum number of iteration before returing a value
-function bissection(x1,x2,err,N)
+function bissection(xs,ys,x1,x2,err,N)
     local fxm
+    # big_x_sampled = Any[]
+    # big_y_sampled = Any[]
+    # push!(big_x_sampled,xs)
+    # push!(big_y_sampled,ys)
+
     xm = (x1 + x2)/2
     compt = 0
     while abs(x2-x1)/(2*abs(xm)) > err && compt < N
         xm = (x1 + x2)/2
-        ans = Pade(big_x_sampled[end],big_y_sampled[end],rebuild_with=[x1,x2,xm])
+        # ans = Pade(big_x_sampled[end],big_y_sampled[end],rebuild_with=[x1,x2,xm])
+        ans = Pade(xs[end],ys[end],rebuild_with=[x1,x2,xm])
         ys = ans[2]
         fx1 = ys[1]
         fx2 = ys[2]
@@ -377,6 +393,14 @@ function bissection(x1,x2,err,N)
     end
     return (xm, fxm)
 end
+
+# xl = 0
+xr = 2000 # The search is gonna start here
+xs, ys , xl, xr = First_test(xr)
+err = 1e-6
+N = 500
+bissect = bissection(xs,ys,xl,xr,err,N)
+print("bissection test ", bissect, "\n")
 
 # TBD if we really need to modify the bissection method to do like it says below
 # # - Modify the bissection method algorithm to work with the sampled points ✓
@@ -572,5 +596,6 @@ function big_boiii(display_plot = false)
 end
 
 # println(x_sampled)
-ans = big_boiii(true)
-println("The guessed root is: ", ans)
+# ans = big_boiii(true)
+# println("The guessed root is: ", ans)
+

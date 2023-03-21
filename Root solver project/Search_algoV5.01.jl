@@ -310,7 +310,7 @@ function pade_stop_criteria(xs,ys,xl)
         pade_x2, pade_y2 = Pade(big_x_sampled[end-1],big_y_sampled[end-1],N=N,xl =xl)
         # println(pade_x1)
         # println(pade_x2)
-        #calculate error between the two Padé's in between a relevant x range
+        # Calculate error between the two Padé's in between a relevant x range
         error = 0
         for i in range(1,length(pade_x1))
             error += abs(pade_y2[i] - pade_y1[i])/N
@@ -320,7 +320,8 @@ function pade_stop_criteria(xs,ys,xl)
         if length(errors)>1
             ratio = errors[end-1]/errors[end]
             push!(ratios, ratio)
-            #checks if the error is diminishing with each extra sampling (needs to diminish twice in a row)
+            # Checks if the error is diminishing with each extra sampling 
+            # (needs to diminish twice in a row)
             if length(ratios)>2
                 if ratios[end]<ratios[end-1] && ratios[end-1] < ratios[end-2]
                     stop_crit = true
