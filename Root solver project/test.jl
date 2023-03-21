@@ -200,15 +200,15 @@ function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
         for i in eachindex(px)
             approx[i] = rebuild(px[i], l, P, X)
         end 
-    else
-        print("Don't need to resample everthing \n")
-        px = rebuild_with
-        print("px ", px, "\n")
-        # approx = map(rebuild, px, l, P)
-        for i in eachindex(x)
-            approx[i] = rebuild(px[i], l, P, X)
-        end
-    end
+    # else
+    #     print("Don't need to resample everthing \n")
+    #     px = rebuild_with
+    #     print("px ", px, "\n")
+    #     # approx = map(rebuild, px, l, P)
+    #     for i in eachindex(x)
+    #         approx[i] = rebuild(px[i], l, P, X)
+    #     end
+    # end
     return (px, approx)
 end
 
@@ -380,6 +380,7 @@ function bissection(xs,ys,x1,x2,err,N)
         xm = (x1 + x2)/2
         # ans = Pade(big_x_sampled[end],big_y_sampled[end],rebuild_with=[x1,x2,xm])
         ans = Pade(xs[end],ys[end],rebuild_with=[x1,x2,xm])
+        ans = rebuild(x1,x2,P,X)
         ys = ans[2]
         fx1 = ys[1]
         fx2 = ys[2]
