@@ -1,7 +1,8 @@
 # module Davidson_HarmonizRitz_TestFile
 using LinearAlgebra, Random, Arpack, KrylovKit # , bicgstab, cg
 
-@inline function projVec(dim::Integer, coeff::Integer, pVec::Vector{T}, sVec::Array{T})::Array{T} where T <: Number
+# @inline function projVec(dim::Integer, coeff, pVec::Vector{T}, sVec::Array{T})::Array{T} where T <: Number
+@inline function projVec(coeff, pVec, sVec)
     return sVec .- (coeff .* pVec)
 	# return sVec .- (BLAS.dotc(dim, pVec, 1, sVec, 1) .* pVec) # Sean old code 
 end
@@ -28,12 +29,16 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
 
         # Projections 
         coeff_first_proj = ((conj.(transpose(hk))*pk)/(conj.(transpose(hk))*fk))[1]
-
         print("coeff_first_proj ", coeff_first_proj, "\n")
-        pkPrj = projVec(dim, coeff_first_proj, fk, pk)
+        print("fk ", fk, "\n")
+        print("pk ", pk, "\n")
+        pkPrj = projVec(coeff_first_proj, fk, pk)
+        print("pkPrj ", pkPrj, "\n")
         A_proj = A * pkPrj .- (theta .* pkPrj)
+        print("A_proj ", A_proj, "\n")
         coeff_second_proj = ((conj.(transpose(hk))*A_proj)/(conj.(transpose(hk))*fk))[1] 
-        vk = projVec(dim, coeff_second_proj, u, A_proj)
+        print("coeff_second_proj ", coeff_second_proj, "\n")
+        vk = projVec(coeff_second_proj, fk, A_proj)
 
         # Sean old code for the projections above
         # pkPrj = projVec(dim, u, pk)
@@ -54,10 +59,10 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
 
         # Projections 
         coeff_first_proj = ((conj.(transpose(hk))*b)/(conj.(transpose(hk))*fk))[1] 
-        bPrj = projVec(dim, coeff_first_proj, fk, b)
+        bPrj = projVec(coeff_first_proj, fk, b)
         A_proj = A * bPrj .- (theta .* bPrj)
         coeff_second_proj = ((conj.(transpose(hk))*A_proj)/(conj.(transpose(hk))*fk))[1] 
-        t = projVec(dim, coeff_second_proj, u, A_proj)
+        t = projVec(coeff_second_proj, fk, A_proj)
 
         # Old Sean code for the projections above 
         # bPrj = projVec(dim, u, b) 
@@ -86,6 +91,33 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
     return xk_m1
 end
 
+function gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
+    rnd = Array{ComplexF64}(undef,3,1)
+    nrm_a = Wk[:,i]
+    Wk[:,i] = Wk[:,i]/nrm_a
+    proj0 = conj.(transpose(Wk[:,1:i]))*Wk[:,i]
+    wk_tilde = Wk[:,i] - Wk[:,1:i]*proj0
+    nrm_b = norm(wk_tilde)
+    if nrm_b < tol_a
+        t = t + rand!(rnd)
+        Wk[:,i] = A*t
+        gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
+    else 
+        proj0 = proj0 + conj.(transpose(Wk[:,1:i]))*Wk[:,i]
+        proj = (conj.(transpose(Wk[:,1:i]))*Wk[:,i])/nrm_b
+    end 
+
+    while norm(proj) > tol_b 
+        wk_tilde = wk_tilde - W[:,1:i]*(conj.(transpose(Wk[:,1:i]))*wk_tilde)
+        nrm_c = norm(wk_tilde)
+        prj = (conj.(transpose(Wk[:,1:i]))*wk_tilde)/nrm_c
+        proj0 = proj0 + (conj.(transpose(Wk[:,1:i]))*wk_tilde)
+        nrmb = nrmb*nrm_c
+    end 
+    t_tilde = t - V[:,1:i]*proj0
+    Vk[:,i] = t_tilde/nrm_b
+    Wk[:,i] = w_tilde/nrm_b
+end
 
 
 
@@ -151,20 +183,31 @@ function davidson_it(A)
         # bicgstab_matrix_ritz(A, theta, fk, hk, b)
         t = bicgstab_matrix_ritz(A, theta_tilde, fk, hk, r)
 
+        wk = A*t # Vector 
+        Wk[:,i] = wk 
+
         # MGS (TBD)
+        tol_a = 1e-3
+        tol_b = 1e-3
+        gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
         # gramSchmidt!(Vk, i) # Sean's code 
 
         # Modifies Vk and Wk 
-
-        Kk[i+1,1:n] = conj.(transpose(Wk[:,i]))*Vk[1:i-1,1:i-1]
-        Kk[1:n,n+1] = conj.(tranpose(Wk[1:i-1,1:i-1]))*Vk[:,i]
-        Kk[n,n] = conj.(transpose(Wk[:,i]))*Vk[:,i]
+        # print("1:2 ", 1:2, "\n")
+        # print("Kk[i+1,1:i] ", Kk[i+1,1:i], "\n")
+        # print("conj.(transpose(Wk[:,i]))*Vk[:,1:i-1] ", conj.(transpose(Wk[:,i]))*Vk[:,1:i], "\n")
+        Kk[i+1,1:i] = conj.(transpose(Wk[:,i]))*Vk[:,1:i]
+        Kk[1:i,i+1] = conj.(transpose(Wk[:,1:i]))*Vk[:,i]
+        print("conj.(transpose(Wk[:,i])) ", conj.(transpose(Wk[:,i])), "\n")
+        print("Vk[:,i]", Vk[:,i], "\n")
+        Kk[i,i] = (conj.(transpose(Wk[:,i]))*Vk[:,i])[1]
 
         # Compute the smallest eigenpair of Kk 
         print("size(Kk) ", size(Kk), "\n")
         julia_eig_solve =  eigsolve(Kk[1:i,1:i])
         julia_eigvals = julia_eig_solve[1]
         julia_eigvects = julia_eig_solve[2]
+        print("julia_eigvects ", julia_eigvects, "\n")
 
         print("julia_eigvals ", julia_eigvals, "\n")
         min_eigval = 1000
@@ -188,9 +231,9 @@ function davidson_it(A)
         # theta_tilde = julia_eigvals[end]
         # s =  julia_eigvects[end][:] # Minimum eigvector
         print("theta_tilde ", theta_tilde, "\n")
-        # print("s ", s, "\n")
+        print("s ", s, "\n")
 
-        fk = Vk*s
+        fk = Vk[:,1:i]*s
         nrm_fk = norm(fk)
         hk = (Wk*s)/norm(fk) # Harmonic Ritz vector 
         r = hk - theta_tilde*fk
