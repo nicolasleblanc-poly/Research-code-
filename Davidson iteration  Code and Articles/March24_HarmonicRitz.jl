@@ -27,10 +27,12 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
         pk = r_m1 .+ beta.*(p_m1-omega_m1.*v_m1)
 
         # Projections 
-        coeff_first_proj = (conj.(transpose(hk))*pk)/(conj.(transpose(hk))*fk) 
+        coeff_first_proj = ((conj.(transpose(hk))*pk)/(conj.(transpose(hk))*fk))[1]
+
+        print("coeff_first_proj ", coeff_first_proj, "\n")
         pkPrj = projVec(dim, coeff_first_proj, fk, pk)
         A_proj = A * pkPrj .- (theta .* pkPrj)
-        coeff_second_proj = (conj.(transpose(hk))*A_proj)/(conj.(transpose(hk))*fk) 
+        coeff_second_proj = ((conj.(transpose(hk))*A_proj)/(conj.(transpose(hk))*fk))[1] 
         vk = projVec(dim, coeff_second_proj, u, A_proj)
 
         # Sean old code for the projections above
@@ -51,10 +53,10 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
         s = r_m1 - alpha.*vk
 
         # Projections 
-        coeff_first_proj = (conj.(transpose(hk))*b)/(conj.(transpose(hk))*fk) 
+        coeff_first_proj = ((conj.(transpose(hk))*b)/(conj.(transpose(hk))*fk))[1] 
         bPrj = projVec(dim, coeff_first_proj, fk, b)
         A_proj = A * bPrj .- (theta .* bPrj)
-        coeff_second_proj = (conj.(transpose(hk))*A_proj)/(conj.(transpose(hk))*fk) 
+        coeff_second_proj = ((conj.(transpose(hk))*A_proj)/(conj.(transpose(hk))*fk))[1] 
         t = projVec(dim, coeff_second_proj, u, A_proj)
 
         # Old Sean code for the projections above 
@@ -84,6 +86,9 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
     return xk_m1
 end
 
+
+
+
 function davidson_it(A)
     """
     This function is the Davidson iteration algorithm. It is a hopefully better
@@ -103,49 +108,26 @@ function davidson_it(A)
     rand!(v)
     # print("v ", v, "\n")
 
-    vk = v/norm(v) # Vector 
-    wk = A*v # Vector 
-    lk = (conj.(transpose(wk))*vk)[1] # Number
-    hk = (conj.(transpose(wk))*wk)[1] # Number
-    # print("hk ", hk, "\n")
-
-    # Vk = Array{Float64}(undef, rows, cols)
-    Vk = zeros(ComplexF64, rows, cols)
-    # The first index is to select a row
-    # The second index is to select a column
-    Vk[:,1] = vk
-    # print("Vk ", Vk, "\n")
-
-    # Wk = Array{Float64}(undef, rows, cols)
+    nrm_v = norm(v)
+    vk = v/nrm_v # Vector 
+    w = A*v # Vector 
+    nrm_w = norm(w)
+    wk = w/nrm_w # Vector 
+    vk = vk/nrm_w # Vector 
+    kk = (conj.(transpose(wk))*vk)[1] # Number
+    Kk = zeros(ComplexF64, rows, cols)
     Wk = zeros(ComplexF64, rows, cols)
+    Vk = zeros(ComplexF64, rows, cols)
+    # print("kk ", kk, "\n")
+    Kk[1,1] = kk
     Wk[:,1] = wk
-    # print("Wk ", Wk, "\n")
-    
+    Vk[:,1] = vk
+    theta_tilde = inv(kk)
+    print()
+    r = wk - theta_tilde*vk
 
-    Wk_tilde = zeros(ComplexF64, rows, cols)
-    # Wk_tilde = Wk * inv(Lk)
-    # print("Wk_tilde ", Wk_tilde, "\n")
-
-    Hk_hat = zeros(ComplexF64, rows, cols)
-    # Hk_hat = Array{Float64}(undef, rows, cols)
-    Hk_hat[1,1] = hk
-    # print("Hk_hat ", Hk_hat, "\n")
-
-    Hk_tilde = zeros(ComplexF64, rows, cols)
-
-    u_tilde = vk # Vector 
-    u_hat = wk # Vector 
-    # print("u_tilde ", u_tilde, "\n")
-    # print("u_hat ", u_hat, "\n")
-    theta_tilde = hk # Number 
-    r = u_hat - real(theta_tilde)*u_tilde # Vector
-    # print("r ", r, "\n")
-
-    t = zeros(ComplexF64, rows, 1)
-    s = zeros(ComplexF64, rows, 1)
-    rand!(s)
-
-    z = A*u_tilde
+    fk = vk # Vector 
+    hk = wk # Vector 
 
     # Test matrix to see if 
     # conj.(transpose(eig_vect_matrix))*Hk_hat*eig_vect_matrix = A
@@ -157,21 +139,6 @@ function davidson_it(A)
     for i = 2:cols # Iterate through all of the columns 
         print("i ", i, "\n")
 
-        # diagonal_A = diag(A)
-        # A_diagonal_matrix = Diagonal(diagonal_A)
-        # print("A_diagonal_matrix ", A_diagonal_matrix, "\n")
-
-        # u_tilde_mod = copy(u_tilde)
-        # # print("u_mod[end:end,1] ", u_mod[end:end,1], "\n")
-        # u_tilde_mod[end] = 0.0
-
-        # u_hat_mod = copy(u_hat)
-        # # print("u_mod[end:end,1] ", u_mod[end:end,1], "\n")
-        # u_hat_mod[end] = 0.0
-
-        z_mod = copy(z)
-        z_mod[end] = 0.0
-
         # Solve for t using bicgstab 
         # 1. Here we using only the diagonal of A and we make the 
         # last element of u_tilde and u_hat equal to 0. 
@@ -181,58 +148,21 @@ function davidson_it(A)
         
         # Not sure about this... Ask Sean about how his changes to my bicgstab
         # work. 
-        t = bicgstab_matrix_ritz(((I-(z_mod*conj.(transpose(z_mod))))*(A-
-        real(theta_tilde[1])*I)*(I-Vk*s*conj.(transpose(z_mod))*A)),theta_tilde,z,
-        theta_tilde*wk)
-        # bicgstab_matrix_ritz(A, theta, u, b)
+        # bicgstab_matrix_ritz(A, theta, fk, hk, b)
+        t = bicgstab_matrix_ritz(A, theta_tilde, fk, hk, r)
 
         # MGS (TBD)
         # gramSchmidt!(Vk, i) # Sean's code 
 
-        # t_tilde = t - Vk[:,1:i-1]*inv(Lk[1:i-1,1:i-1])*
-        # conj.(transpose(Wk[:,1:i-1]))*t
-        # # print("t_tilde ", t_tilde, "\n")
-        # vk = t_tilde/norm(t_tilde) # v_{k+1}
-        # Vk[:,i] = vk # Add the new vk to the Vk matrix -> V_{k+1}
+        # Modifies Vk and Wk 
 
-        # New wk that will be added as a new column to Wk
-        wk = A*t # w_{k+1} = A*v_{k+1}
-        # print("wk ", wk, "\n")
-        # print("Wk ", Wk, "\n")
-        
-        # print("new Wk ", Wk, "\n")
+        Kk[i+1,1:n] = conj.(transpose(Wk[:,i]))*Vk[1:i-1,1:i-1]
+        Kk[1:n,n+1] = conj.(tranpose(Wk[1:i-1,1:i-1]))*Vk[:,i]
+        Kk[n,n] = conj.(transpose(Wk[:,i]))*Vk[:,i]
 
-        wk_tilde = wk - Wk*conj.(transpose(Wk))*wk
-        # Expand W_k with this vector to W_{k+1}
-        Wk[:,i] = wk_tilde/norm(wk_tilde) # W_{k+1}
-
-        t_tilde = t - Vk*conj.(transpose(Wk))*wk
-        vk = t_tilde/norm(wk_tilde)
-        Vk[:,i] = vk # Add the new vk to the Vk matrix -> V_{k+1}
-        Hk_tilde = inv(conj.(transpose(Wk)*Vk))
-        # Hk_tilde = (W_k*Vk)^{-1}
-        # It is not necessary to invert W_k*Vk since the harmonic Ritz values
-        # are simply the inverses of the eigenvalues of W_k*Vk.
-
-        # lk = conj.(transpose(wk))*Vk[:,1:i]
-        # # print("lk ", lk, "\n")
-        # # print("Lk ", Lk, "\n")
-        # # Expand L_k with this vector to W_{k+1}
-        # Lk[i,1:i] = lk # Row of matrix -> L_{k+1}
-
-        # hk = conj.(transpose(wk))*Wk[:,1:i]
-        # # H_hat_{k+1}
-        # Hk_hat[i,1:i] = hk # Row of matrix
-        # Hk_hat[1:i,i] = conj.(transpose(hk)) # Column of matrix
-        # # print("Hk_hat ", Hk_hat, "\n")
-
-        # Hk_tilde = inv(Lk[1:i,1:i])*Hk_hat[1:i,1:i] # H_tilde_{k+1}
-
-        print("size(Hk_tilde) ", size(Hk_tilde), "\n")
-        
-
-        # julia_eig_solve =  eigsolve(Hk_hat[1:i,1:i]) # Old, this was a mistake
-        julia_eig_solve =  eigsolve(Hk_tilde[1:i,1:i])
+        # Compute the smallest eigenpair of Kk 
+        print("size(Kk) ", size(Kk), "\n")
+        julia_eig_solve =  eigsolve(Kk[1:i,1:i])
         julia_eigvals = julia_eig_solve[1]
         julia_eigvects = julia_eig_solve[2]
 
@@ -259,20 +189,12 @@ function davidson_it(A)
         # s =  julia_eigvects[end][:] # Minimum eigvector
         print("theta_tilde ", theta_tilde, "\n")
         # print("s ", s, "\n")
-        
-        # Compute the harmonic Ritz vector 
-        u_tilde = (Vk[:,1:i]*s)/norm(Vk[:,1:i]*s)
-        u_hat = A*u_tilde 
-        print("u_hat ", u_hat, "\n")
-        print("u_hat_test ", (Wk[1:i,1:i]*s)/(norm(Vk[1:i,1:i]*s)), "\n")
-        # Should be equal to (Wk*s)/norm(Vk*s)
-        
-        # Compute the residual 
-        r = u_hat - theta_tilde[1]*u_tilde # Residual vector 
-        # print("r ", r, "\n")
-        # print("norm of residual ", norm(r), "\n")
-        # print("real((conj.(transpose(r))*r)[1]) ", 
-        # real((conj.(transpose(r))*r)[1]), "\n")
+
+        fk = Vk*s
+        nrm_fk = norm(fk)
+        hk = (Wk*s)/norm(fk) # Harmonic Ritz vector 
+        r = hk - theta_tilde*fk
+
 
         # if norm(r) <= tol
         if real((conj.(transpose(r))*r)[1]) < tol
