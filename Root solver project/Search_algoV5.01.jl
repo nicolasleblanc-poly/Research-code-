@@ -31,9 +31,9 @@ global py = map(f, px)
 ymax = 50
 ymin = -200
 lbound = 0
-global plt1 = plot(px,py, ylim=(ymin,ymax), legend = false)
-display(plt1)
-sleep(3)
+# global plt1 = plot(px,py, ylim=(ymin,ymax), legend = false)
+# display(plt1)
+# sleep(3)
 
 
 
@@ -559,7 +559,7 @@ ymin = -2000
 # y_pade = ans[2]
 # #plot!(x_pade, y_pade)
 # display(plt)
-pade_x, pade_y = Pade(big_x_sampled[end],big_y_sampled[end],N=N,)
-plot(pade_x,pade_y,xlim = [xmin,xmax],ylim =[ymin,ymax])
-plot!(x_sampled,y_sampled, markershape = :circle, linewidth = 0, color = :green)
-plot!(px,py)
+# pade_x, pade_y = Pade(big_x_sampled[end],big_y_sampled[end],N=N,)
+# plot(pade_x,pade_y,xlim = [xmin,xmax],ylim =[ymin,ymax])
+# plot!(x_sampled,y_sampled, markershape = :circle, linewidth = 0, color = :green)
+# plot!(px,py)
