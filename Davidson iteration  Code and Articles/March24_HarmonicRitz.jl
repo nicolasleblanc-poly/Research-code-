@@ -28,16 +28,18 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
         pk = r_m1 .+ beta.*(p_m1-omega_m1.*v_m1)
 
         # Projections 
+        print("((conj.(transpose(hk))*pk) ", (conj.(transpose(hk))*pk), "\n")
+        print("conj.(transpose(hk))*fk) ", conj.(transpose(hk))*fk, "\n")
         coeff_first_proj = ((conj.(transpose(hk))*pk)/(conj.(transpose(hk))*fk))[1]
-        print("coeff_first_proj ", coeff_first_proj, "\n")
-        print("fk ", fk, "\n")
-        print("pk ", pk, "\n")
+        # print("coeff_first_proj ", coeff_first_proj, "\n")
+        # print("fk ", fk, "\n")
+        # print("pk ", pk, "\n")
         pkPrj = projVec(coeff_first_proj, fk, pk)
-        print("pkPrj ", pkPrj, "\n")
+        # print("pkPrj ", pkPrj, "\n")
         A_proj = A * pkPrj .- (theta .* pkPrj)
-        print("A_proj ", A_proj, "\n")
+        # print("A_proj ", A_proj, "\n")
         coeff_second_proj = ((conj.(transpose(hk))*A_proj)/(conj.(transpose(hk))*fk))[1] 
-        print("coeff_second_proj ", coeff_second_proj, "\n")
+        # print("coeff_second_proj ", coeff_second_proj, "\n")
         vk = projVec(coeff_second_proj, fk, A_proj)
 
         # Sean old code for the projections above
@@ -92,8 +94,11 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
 end
 
 function gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
-    rnd = Array{ComplexF64}(undef,3,1)
-    nrm_a = Wk[:,i]
+    print("Vk ", Vk, "\n")
+    print("Wk ", Wk, "\n")
+
+    rnd = Array{ComplexF64}(undef,3,1) # Hard-coded for now 
+    nrm_a = norm(Wk[:,i])
     Wk[:,i] = Wk[:,i]/nrm_a
     proj0 = conj.(transpose(Wk[:,1:i]))*Wk[:,i]
     wk_tilde = Wk[:,i] - Wk[:,1:i]*proj0
@@ -101,22 +106,37 @@ function gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
     if nrm_b < tol_a
         t = t + rand!(rnd)
         Wk[:,i] = A*t
+        print("MGS \n")
         gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
     else 
         proj0 = proj0 + conj.(transpose(Wk[:,1:i]))*Wk[:,i]
-        proj = (conj.(transpose(Wk[:,1:i]))*Wk[:,i])/nrm_b
+        prj = (conj.(transpose(Wk[:,1:i]))*Wk[:,i])/nrm_b
     end 
 
-    while norm(proj) > tol_b 
-        wk_tilde = wk_tilde - W[:,1:i]*(conj.(transpose(Wk[:,1:i]))*wk_tilde)
+    # print("norm(prj) ", norm(prj), "\n")
+    while norm(prj) > tol_b 
+        # print("while loop \n")
+        wk_tilde = wk_tilde - Wk[:,1:i]*(conj.(transpose(Wk[:,1:i]))*wk_tilde)
         nrm_c = norm(wk_tilde)
+        print("nrm_c ", nrm_c, "\n")
+
         prj = (conj.(transpose(Wk[:,1:i]))*wk_tilde)/nrm_c
         proj0 = proj0 + (conj.(transpose(Wk[:,1:i]))*wk_tilde)
-        nrmb = nrmb*nrm_c
+        nrm_b = nrm_b-nrm_c
+        # print("norm(prj) ", norm(prj), "\n")
     end 
-    t_tilde = t - V[:,1:i]*proj0
+    t_tilde = t - Vk[:,1:i]*proj0
+    print("t_tilde ", t_tilde, "\n")
+    print("wk_tilde ", wk_tilde, "\n")
     Vk[:,i] = t_tilde/nrm_b
-    Wk[:,i] = w_tilde/nrm_b
+    Wk[:,i] = wk_tilde/nrm_b
+
+    print("nrm_b ", nrm_b, "\n")
+    # print("Vk[:,i] ", Vk[:,i], "\n")
+    # print("Wk[:,i] ", Wk[:,i], "\n")
+    print("Vk ", Vk, "\n")
+    print("Wk ", Wk, "\n")
+
 end
 
 
@@ -155,7 +175,7 @@ function davidson_it(A)
     Wk[:,1] = wk
     Vk[:,1] = vk
     theta_tilde = inv(kk)
-    print()
+    # print()
     r = wk - theta_tilde*vk
 
     fk = vk # Vector 
@@ -187,7 +207,7 @@ function davidson_it(A)
         Wk[:,i] = wk 
 
         # MGS (TBD)
-        tol_a = 1e-3
+        tol_a = 1e-2
         tol_b = 1e-3
         gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
         # gramSchmidt!(Vk, i) # Sean's code 
@@ -203,6 +223,7 @@ function davidson_it(A)
         Kk[i,i] = (conj.(transpose(Wk[:,i]))*Vk[:,i])[1]
 
         # Compute the smallest eigenpair of Kk 
+        print("Kk ", Kk[1:i,1:i], "\n")
         print("size(Kk) ", size(Kk), "\n")
         julia_eig_solve =  eigsolve(Kk[1:i,1:i])
         julia_eigvals = julia_eig_solve[1]
@@ -235,7 +256,7 @@ function davidson_it(A)
 
         fk = Vk[:,1:i]*s
         nrm_fk = norm(fk)
-        hk = (Wk*s)/norm(fk) # Harmonic Ritz vector 
+        hk = (Wk[:,1:i]*s)/norm(fk) # Harmonic Ritz vector 
         r = hk - theta_tilde*fk
 
 
