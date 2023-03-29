@@ -109,8 +109,9 @@ function gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
         print("MGS \n")
         gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
     else 
-        proj0 = proj0 + conj.(transpose(Wk[:,1:i]))*Wk[:,i]
-        prj = (conj.(transpose(Wk[:,1:i]))*Wk[:,i])/nrm_b
+        proj0 = proj0 + conj.(transpose(Wk[:,1:i]))*wk_tilde  # Wk[:,i]
+        prj = (conj.(transpose(Wk[:,1:i]))*wk_tilde)/nrm_b
+        # prj = (conj.(transpose(Wk[:,1:i]))*Wk[:,i])/nrm_b
     end 
 
     # print("norm(prj) ", norm(prj), "\n")
@@ -122,7 +123,7 @@ function gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
 
         prj = (conj.(transpose(Wk[:,1:i]))*wk_tilde)/nrm_c
         proj0 = proj0 + (conj.(transpose(Wk[:,1:i]))*wk_tilde)
-        nrm_b = nrm_b-nrm_c
+        nrm_b = nrm_b*nrm_c
         # print("norm(prj) ", norm(prj), "\n")
     end 
     t_tilde = t - Vk[:,1:i]*proj0
@@ -165,7 +166,9 @@ function davidson_it(A)
     w = A*v # Vector 
     nrm_w = norm(w)
     wk = w/nrm_w # Vector 
-    vk = vk/nrm_w # Vector 
+    nrm_v = nrm_v
+    # vk = vk/nrm_w # Vector 
+    vk = vk/nrm_v # Vector 
     kk = (conj.(transpose(wk))*vk)[1] # Number
     Kk = zeros(ComplexF64, rows, cols)
     Wk = zeros(ComplexF64, rows, cols)
@@ -204,7 +207,7 @@ function davidson_it(A)
         t = bicgstab_matrix_ritz(A, theta_tilde, fk, hk, r)
 
         wk = A*t # Vector 
-        Wk[:,i] = wk 
+        Wk[:,i] = wk # W_{k+1}
 
         # MGS (TBD)
         tol_a = 1e-2
@@ -216,11 +219,14 @@ function davidson_it(A)
         # print("1:2 ", 1:2, "\n")
         # print("Kk[i+1,1:i] ", Kk[i+1,1:i], "\n")
         # print("conj.(transpose(Wk[:,i]))*Vk[:,1:i-1] ", conj.(transpose(Wk[:,i]))*Vk[:,1:i], "\n")
-        Kk[i+1,1:i] = conj.(transpose(Wk[:,i]))*Vk[:,1:i]
-        Kk[1:i,i+1] = conj.(transpose(Wk[:,1:i]))*Vk[:,i]
-        print("conj.(transpose(Wk[:,i])) ", conj.(transpose(Wk[:,i])), "\n")
-        print("Vk[:,i]", Vk[:,i], "\n")
-        Kk[i,i] = (conj.(transpose(Wk[:,i]))*Vk[:,i])[1]
+        
+        # Kk[i+1,1:i] = conj.(transpose(Wk[:,i]))*Vk[:,1:i]
+        Kk[i,1:i-1] = conj.(transpose(Wk[:,i]))*Vk[:,1:i-1]
+        # Kk[1:i,i+1] = conj.(transpose(Wk[:,1:i]))*Vk[:,i]
+        Kk[1:i-1,i] = conj.(transpose(Wk[:,1:i-1]))*Vk[:,i]
+        # print("conj.(transpose(Wk[:,i])) ", conj.(transpose(Wk[:,i])), "\n")
+        # print("Vk[:,i]", Vk[:,i], "\n")
+        Kk[i-1,i-1] = (conj.(transpose(Wk[:,i]))*Vk[:,i])[1]
 
         # Compute the smallest eigenpair of Kk 
         print("Kk ", Kk[1:i,1:i], "\n")
@@ -255,7 +261,7 @@ function davidson_it(A)
         print("s ", s, "\n")
 
         fk = Vk[:,1:i]*s
-        nrm_fk = norm(fk)
+        # nrm_fk = norm(fk)
         hk = (Wk[:,1:i]*s)/norm(fk) # Harmonic Ritz vector 
         r = hk - theta_tilde*fk
 
