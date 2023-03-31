@@ -30,8 +30,8 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
         # Projections 
         print("((conj.(transpose(hk))*pk) ", (conj.(transpose(hk))*pk), "\n")
         print("conj.(transpose(hk))*fk) ", conj.(transpose(hk))*fk, "\n")
-        coeff_first_proj = ((conj.(transpose(hk))*pk)/(conj.(transpose(hk))*fk))[1]
-        # print("coeff_first_proj ", coeff_first_proj, "\n")
+        coeff_first_proj = real(((conj.(transpose(hk))*pk)/(conj.(transpose(hk))*fk))[1])
+        print("coeff_first_proj ", coeff_first_proj, "\n")
         # print("fk ", fk, "\n")
         # print("pk ", pk, "\n")
         pkPrj = projVec(coeff_first_proj, fk, pk)
@@ -93,21 +93,26 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
     return xk_m1
 end
 
-function gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
+function gramSchmidt!(i,wk,t,A,Wk,Vk,tol_a,tol_b)
     print("Vk ", Vk, "\n")
     print("Wk ", Wk, "\n")
 
     rnd = Array{ComplexF64}(undef,3,1) # Hard-coded for now 
     nrm_a = norm(Wk[:,i])
-    Wk[:,i] = Wk[:,i]/nrm_a
-    proj0 = conj.(transpose(Wk[:,1:i]))*Wk[:,i]
-    wk_tilde = Wk[:,i] - Wk[:,1:i]*proj0
+    wk = wk/norm(Wk[:,i])
+    # Wk[:,i] = Wk[:,i]/nrm_a
+    # proj0 = conj.(transpose(Wk[:,1:i]))*Wk[:,i]
+    proj0 = conj.(transpose(Wk[:,1:i]))*wk
+    # wk_tilde = Wk[:,i] - Wk[:,1:i]*proj0
+    wk_tilde = wk - Wk[:,1:i]*proj0
+    print("wk_tilde ", wk_tilde, "\n")
     nrm_b = norm(wk_tilde)
     if nrm_b < tol_a
         t = t + rand!(rnd)
-        Wk[:,i] = A*t
+        # Wk[:,i] = A*t
+        wk = A*t
         print("MGS \n")
-        gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
+        gramSchmidt!(i,wk,t,A,Wk,Vk,tol_a,tol_b)
     else 
         proj0 = proj0 + conj.(transpose(Wk[:,1:i]))*wk_tilde  # Wk[:,i]
         prj = (conj.(transpose(Wk[:,1:i]))*wk_tilde)/nrm_b
@@ -118,6 +123,7 @@ function gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
     while norm(prj) > tol_b 
         # print("while loop \n")
         wk_tilde = wk_tilde - Wk[:,1:i]*(conj.(transpose(Wk[:,1:i]))*wk_tilde)
+        print("wk_tilde ", wk_tilde, "\n")
         nrm_c = norm(wk_tilde)
         print("nrm_c ", nrm_c, "\n")
 
@@ -139,6 +145,58 @@ function gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
     print("Wk ", Wk, "\n")
 
 end
+
+
+# function gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
+#     print("Vk ", Vk, "\n")
+#     print("Wk ", Wk, "\n")
+
+#     rnd = Array{ComplexF64}(undef,3,1) # Hard-coded for now 
+#     nrm_a = norm(Wk[:,i])
+#     wk = wk/norm(Wk[:,i])
+#     # Wk[:,i] = Wk[:,i]/nrm_a
+#     # proj0 = conj.(transpose(Wk[:,1:i]))*Wk[:,i]
+#     proj0 = conj.(transpose(Wk[:,1:i]))*wk
+#     # wk_tilde = Wk[:,i] - Wk[:,1:i]*proj0
+#     wk_tilde = wk - Wk[:,1:i]*proj0
+#     nrm_b = norm(wk_tilde)
+#     if nrm_b < tol_a
+#         t = t + rand!(rnd)
+#         # Wk[:,i] = A*t
+#         wk = A*t
+#         print("MGS \n")
+#         gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
+#     else 
+#         proj0 = proj0 + conj.(transpose(Wk[:,1:i]))*wk_tilde  # Wk[:,i]
+#         prj = (conj.(transpose(Wk[:,1:i]))*wk_tilde)/nrm_b
+#         # prj = (conj.(transpose(Wk[:,1:i]))*Wk[:,i])/nrm_b
+#     end 
+
+#     # print("norm(prj) ", norm(prj), "\n")
+#     while norm(prj) > tol_b 
+#         # print("while loop \n")
+#         wk_tilde = wk_tilde - Wk[:,1:i]*(conj.(transpose(Wk[:,1:i]))*wk_tilde)
+#         nrm_c = norm(wk_tilde)
+#         print("nrm_c ", nrm_c, "\n")
+
+#         prj = (conj.(transpose(Wk[:,1:i]))*wk_tilde)/nrm_c
+#         proj0 = proj0 + (conj.(transpose(Wk[:,1:i]))*wk_tilde)
+#         nrm_b = nrm_b*nrm_c
+#         # print("norm(prj) ", norm(prj), "\n")
+#     end 
+#     t_tilde = t - Vk[:,1:i]*proj0
+#     print("t_tilde ", t_tilde, "\n")
+#     print("wk_tilde ", wk_tilde, "\n")
+#     Vk[:,i] = t_tilde/nrm_b
+#     Wk[:,i] = wk_tilde/nrm_b
+
+#     print("nrm_b ", nrm_b, "\n")
+#     # print("Vk[:,i] ", Vk[:,i], "\n")
+#     # print("Wk[:,i] ", Wk[:,i], "\n")
+#     print("Vk ", Vk, "\n")
+#     print("Wk ", Wk, "\n")
+
+# end
 
 
 
@@ -207,12 +265,15 @@ function davidson_it(A)
         t = bicgstab_matrix_ritz(A, theta_tilde, fk, hk, r)
 
         wk = A*t # Vector 
-        Wk[:,i] = wk # W_{k+1}
+        # We don't do the life below for the wk version of the code (see MGS)
+        Wk[:,i] = wk # W_{k+1} # Added wk to Wk version 
 
-        # MGS (TBD)
+        # MGS (TBD for tolerance values)
         tol_a = 1e-2
         tol_b = 1e-3
-        gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b)
+
+        gramSchmidt!(i,wk,t,A,Wk[:,1:i],Vk[:,1:i],tol_a,tol_b) # wk version 
+        # gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b) # Added wk to Wk version 
         # gramSchmidt!(Vk, i) # Sean's code 
 
         # Modifies Vk and Wk 
