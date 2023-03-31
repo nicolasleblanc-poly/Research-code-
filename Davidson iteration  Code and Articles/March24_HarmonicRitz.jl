@@ -30,7 +30,7 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
         # Projections 
         print("((conj.(transpose(hk))*pk) ", (conj.(transpose(hk))*pk), "\n")
         print("conj.(transpose(hk))*fk) ", conj.(transpose(hk))*fk, "\n")
-        coeff_first_proj = real(((conj.(transpose(hk))*pk)/(conj.(transpose(hk))*fk))[1])
+        coeff_first_proj = (real(conj.(transpose(hk))*pk)/real(conj.(transpose(hk))*fk))[1]
         print("coeff_first_proj ", coeff_first_proj, "\n")
         # print("fk ", fk, "\n")
         # print("pk ", pk, "\n")
@@ -38,7 +38,7 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
         # print("pkPrj ", pkPrj, "\n")
         A_proj = A * pkPrj .- (theta .* pkPrj)
         # print("A_proj ", A_proj, "\n")
-        coeff_second_proj = ((conj.(transpose(hk))*A_proj)/(conj.(transpose(hk))*fk))[1] 
+        coeff_second_proj = (real(conj.(transpose(hk))*A_proj)/real(conj.(transpose(hk))*fk))[1] 
         # print("coeff_second_proj ", coeff_second_proj, "\n")
         vk = projVec(coeff_second_proj, fk, A_proj)
 
@@ -98,8 +98,9 @@ function gramSchmidt!(i,wk,t,A,Wk,Vk,tol_a,tol_b)
     print("Wk ", Wk, "\n")
 
     rnd = Array{ComplexF64}(undef,3,1) # Hard-coded for now 
-    nrm_a = norm(Wk[:,i])
-    wk = wk/norm(Wk[:,i])
+    # nrm_a = norm(Wk[:,i])
+    nrm_a = norm(wk)
+    wk = wk/nrm_a
     # Wk[:,i] = Wk[:,i]/nrm_a
     # proj0 = conj.(transpose(Wk[:,1:i]))*Wk[:,i]
     proj0 = conj.(transpose(Wk[:,1:i]))*wk
