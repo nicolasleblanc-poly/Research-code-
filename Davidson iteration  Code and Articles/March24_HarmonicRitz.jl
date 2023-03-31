@@ -30,7 +30,8 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
         # Projections 
         print("((conj.(transpose(hk))*pk) ", (conj.(transpose(hk))*pk), "\n")
         print("conj.(transpose(hk))*fk) ", conj.(transpose(hk))*fk, "\n")
-        coeff_first_proj = (real(conj.(transpose(hk))*pk)/real(conj.(transpose(hk))*fk))[1]
+        coeff_first_proj = (real(conj.(transpose(hk))*pk)[1]/real(conj.(transpose(hk))*fk)[1])
+        # coeff_first_proj = (real(conj.(transpose(hk))*pk)/real(conj.(transpose(hk))*fk))[1]
         print("coeff_first_proj ", coeff_first_proj, "\n")
         # print("fk ", fk, "\n")
         # print("pk ", pk, "\n")
@@ -38,7 +39,8 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
         # print("pkPrj ", pkPrj, "\n")
         A_proj = A * pkPrj .- (theta .* pkPrj)
         # print("A_proj ", A_proj, "\n")
-        coeff_second_proj = (real(conj.(transpose(hk))*A_proj)/real(conj.(transpose(hk))*fk))[1] 
+        # coeff_second_proj = (real(conj.(transpose(hk))*A_proj)/real(conj.(transpose(hk))*fk))[1] 
+        coeff_second_proj = (real(conj.(transpose(hk))*A_proj)[1]/real(conj.(transpose(hk))*fk)[1]) 
         # print("coeff_second_proj ", coeff_second_proj, "\n")
         vk = projVec(coeff_second_proj, fk, A_proj)
 
@@ -60,10 +62,12 @@ function bicgstab_matrix_ritz(A, theta, fk, hk, b)
         s = r_m1 - alpha.*vk
 
         # Projections 
+        # coeff_first_proj = ((conj.(transpose(hk))*b)/(conj.(transpose(hk))*fk))[1] 
         coeff_first_proj = ((conj.(transpose(hk))*b)/(conj.(transpose(hk))*fk))[1] 
         bPrj = projVec(coeff_first_proj, fk, b)
         A_proj = A * bPrj .- (theta .* bPrj)
-        coeff_second_proj = ((conj.(transpose(hk))*A_proj)/(conj.(transpose(hk))*fk))[1] 
+        # coeff_second_proj = ((conj.(transpose(hk))*A_proj)/(conj.(transpose(hk))*fk))[1] 
+        coeff_second_proj = ((conj.(transpose(hk))*A_proj)[1]/(conj.(transpose(hk))*fk)[1]) 
         t = projVec(coeff_second_proj, fk, A_proj)
 
         # Old Sean code for the projections above 
@@ -124,9 +128,9 @@ function gramSchmidt!(i,wk,t,A,Wk,Vk,tol_a,tol_b)
     while norm(prj) > tol_b 
         # print("while loop \n")
         wk_tilde = wk_tilde - Wk[:,1:i]*(conj.(transpose(Wk[:,1:i]))*wk_tilde)
-        print("wk_tilde ", wk_tilde, "\n")
+        # print("wk_tilde ", wk_tilde, "\n")
         nrm_c = norm(wk_tilde)
-        print("nrm_c ", nrm_c, "\n")
+        # print("nrm_c ", nrm_c, "\n")
 
         prj = (conj.(transpose(Wk[:,1:i]))*wk_tilde)/nrm_c
         proj0 = proj0 + (conj.(transpose(Wk[:,1:i]))*wk_tilde)
