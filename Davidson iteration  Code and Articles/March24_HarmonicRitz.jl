@@ -277,7 +277,7 @@ function davidson_it(A)
         tol_a = 1e-2
         tol_b = 1e-3
 
-        gramSchmidt!(i,wk,t,A,Wk[:,1:i],Vk[:,1:i],tol_a,tol_b) # wk version 
+        gramSchmidt!(i-1,wk,t,A,Wk[:,1:i],Vk[:,1:i],tol_a,tol_b) # wk version 
         # gramSchmidt!(i,t,A,Wk,Vk,tol_a,tol_b) # Added wk to Wk version 
         # gramSchmidt!(Vk, i) # Sean's code 
 
