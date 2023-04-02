@@ -1,5 +1,5 @@
 using LinearAlgebra, Random
-function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, tol::Float64)::Float64
+function jacDavRitzHarm_basic(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, loopDim::Integer,tol::Float64)::Float64
 	### memory initialization
 	resVec = Vector{ComplexF64}(undef, vecDim)
 	hRitzTrg = Vector{ComplexF64}(undef, vecDim)
@@ -7,27 +7,30 @@ function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}
 	bCoeffs1 = Vector{ComplexF64}(undef, repDim)
 	bCoeffs2 = Vector{ComplexF64}(undef, repDim)
 	# set starting vector
-	rand!(view(srcBasis, :, 1))
+	rand!(view(srcBasis, :, 1)) # vk
 	# normalize starting vector
-	nrm = BLAS.nrm2(vecDim, view(srcBasis,:,1), 1)
-	srcBasis[:, 1] = srcBasis[:, 1] ./ nrm
+	nrm = BLAS.nrm2(vecDim, view(srcBasis,:,1), 1) # norm(vk)
+	srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
 	### algorithm initialization
-	trgBasis[:, 1] = opt * srcBasis[:, 1]
+	trgBasis[:, 1] = opt * srcBasis[:, 1] # Wk
 	nrm = BLAS.nrm2(vecDim, view(trgBasis,:,1), 1)
-	trgBasis[:, 1] = trgBasis[:, 1] ./ nrm
-	srcBasis[:, 1] = srcBasis[:, 1] ./ nrm
+	trgBasis[:, 1] = trgBasis[:, 1] ./ nrm # Wk
+	srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
 	# representation of opt^{-1} in trgBasis
 	kMat[1,1] = BLAS.dotc(vecDim, view(trgBasis, :, 1), 1,
-		view(srcBasis, :, 1), 1)
+		view(srcBasis, :, 1), 1) # Kk
 	# Ritz value
 	eigPos = 1
-	theta = 1 / kMat[1,1]
+	theta = 1 / kMat[1,1] # eigenvalue 
 	# Ritz vectors
-	hRitzTrg[:] = trgBasis[:, 1]
-	hRitzSrc[:] = srcBasis[:, 1]
+	hRitzTrg[:] = trgBasis[:, 1] # hk = wk 
+	hRitzSrc[:] = srcBasis[:, 1] # fk = vk
 	# Negative residual vector
-	resVec = (theta .* hRitzSrc) .- hRitzTrg
-	for itr in 2 : repDim
+	resVec = (theta .* hRitzSrc) .- hRitzTrg # theta_tilde*vk - wk
+
+	# Code for if we just want the inner loop, so with no restart  
+	for itr in 2 : repDim # Need to determine when this for loops stops 
+		# depending on how much memory the laptop can take before crashing.
 		prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
 		# calculate Jacobi-Davidson direction
 		srcBasis[:, itr] = bad_bicgstab_matrix(opt, theta, hRitzTrg,
@@ -44,28 +47,210 @@ function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}
 		# eigenvalue decomposition, largest real eigenvalue last.
 		# should replace by BLAS operation
 		eigSys = eigen(view(kMat, 1 : itr, 1 : itr))
+		# print("eigSys.values ", eigSys.values, "\n")
+		# print("eigSys.values[1] ", eigSys.values[1], "\n")
+		# print("eigSys.values[end] ", eigSys.values[end], "\n")
+		# print("1/eigSys.values[1] ", 1/eigSys.values[1], "\n")
+		# print("1/eigSys.values[end] ", 1/eigSys.values[end], "\n")
+
 		# update Ritz vector
-		if abs.(eigSys.values[end]) > abs.(eigSys.values[1])
+		# Sean code
+		# Not sure why there are two conditions and this code only gives the 
+		# smallest eigenvalue without considering that we want the smallest 
+		# positive eigenvalue. 
+		# if abs.(eigSys.values[end]) > abs.(eigSys.values[1])
+		# 	print("First cdn \n")
 		
-			theta = 1/eigSys.values[end]
-			hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, end])
-			hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, end])
-		else
-		
-			theta = 1/eigSys.values[1]
-			hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
-			hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
-		end		
+		# 	theta = 1/eigSys.values[end]
+		# 	hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, end])
+		# 	hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, end])
+		# else
+		# 	print("Second cdn \n")
+		# 	theta = 1/eigSys.values[1]
+		# 	hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
+		# 	hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
+		# end		
+
+		# A better way (in my honest opinion) would be to find the largest
+		# positive eigenvalue and then just do 1/it since that what we want.
+		# Let's find the largest positive eigenvalue found using the Julia 
+		# solver on kMat done above.
+		global max_eigval = 0
+		position = 1
+		for i in eachindex(eigSys.values)
+			if max_eigval < real(eigSys.values[i]) 
+				theta_tilde = real(eigSys.values[i])
+				position = i 
+				global max_eigval = real(theta_tilde)
+				# print("position ", position, "\n")
+				# print("Updated position ", i, " times \n")
+			end 
+			# print("i ", i, "\n")
+			# print("min_eigval ", min_eigval, "\n")
+		end 
+		theta = 1/max_eigval
+
 		# update residual vector
 		resVec = (theta * hRitzSrc) .- hRitzTrg
+ 
 		# add tolerance check here
-		if mod(itr,32) == 0
-			
-			println(real(theta))
+		if norm(resVec) < tol
+			print("Converged off tolerance \n")
+			return real(theta) 
+			# println(real(theta))
 		end
 	end
+ 
+	print("Didn't converge off tolerance. Atteined max set number of iterations \n")
 	return real(theta)
 end
+
+
+function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, loopDim::Integer,tol::Float64)::Float64
+	### memory initialization
+	resVec = Vector{ComplexF64}(undef, vecDim)
+	hRitzTrg = Vector{ComplexF64}(undef, vecDim)
+	hRitzSrc = Vector{ComplexF64}(undef, vecDim)
+	bCoeffs1 = Vector{ComplexF64}(undef, repDim)
+	bCoeffs2 = Vector{ComplexF64}(undef, repDim)
+	# set starting vector
+	rand!(view(srcBasis, :, 1)) # vk
+	# normalize starting vector
+	nrm = BLAS.nrm2(vecDim, view(srcBasis,:,1), 1) # norm(vk)
+	srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
+	### algorithm initialization
+	trgBasis[:, 1] = opt * srcBasis[:, 1] # Wk
+	nrm = BLAS.nrm2(vecDim, view(trgBasis,:,1), 1)
+	trgBasis[:, 1] = trgBasis[:, 1] ./ nrm # Wk
+	srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
+	# representation of opt^{-1} in trgBasis
+	kMat[1,1] = BLAS.dotc(vecDim, view(trgBasis, :, 1), 1,
+		view(srcBasis, :, 1), 1) # Kk
+	# Ritz value
+	eigPos = 1
+	theta = 1 / kMat[1,1] # eigenvalue 
+	# Ritz vectors
+	hRitzTrg[:] = trgBasis[:, 1] # hk = wk 
+	hRitzSrc[:] = srcBasis[:, 1] # fk = vk
+	# Negative residual vector
+	resVec = (theta .* hRitzSrc) .- hRitzTrg # theta_tilde*vk - wk
+
+	# Code with restart
+	# Outer loop
+	for it in 1:5 # Need to think this over 
+		# Inner loop
+		if it > 1
+			# Before we restart, we will create a new version of everything 
+			resVec = Vector{ComplexF64}(undef, vecDim)
+			hRitzTrg = Vector{ComplexF64}(undef, vecDim)
+			hRitzSrc = Vector{ComplexF64}(undef, vecDim)
+			bCoeffs1 = Vector{ComplexF64}(undef, repDim)
+			bCoeffs2 = Vector{ComplexF64}(undef, repDim)
+			trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
+			srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
+			# rand!(view(srcBasis, :, 1)) # vk
+			srcBasis[:,1] = srcBasis[:,end]
+			# normalize starting vector
+			nrm = BLAS.nrm2(vecDim, view(srcBasis,:,1), 1) # norm(vk)
+			srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
+			### algorithm initialization
+			trgBasis[:, 1] = opt * srcBasis[:, 1] # Wk
+			nrm = BLAS.nrm2(vecDim, view(trgBasis,:,1), 1)
+			trgBasis[:, 1] = trgBasis[:, 1] ./ nrm # Wk
+			srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
+			# representation of opt^{-1} in trgBasis
+			kMat[1,1] = BLAS.dotc(vecDim, view(trgBasis, :, 1), 1,
+				view(srcBasis, :, 1), 1) # Kk
+			# Ritz value
+			eigPos = 1
+			theta = 1 / kMat[1,1] # eigenvalue 
+			# Ritz vectors
+			hRitzTrg[:] = trgBasis[:, 1] # hk = wk 
+			hRitzSrc[:] = srcBasis[:, 1] # fk = vk
+			# Negative residual vector
+			resVec = (theta .* hRitzSrc) .- hRitzTrg # theta_tilde*vk - wk
+
+		end
+
+		for itr in 2 : Int(repDim/4) # Need to determine when this for loops stops 
+			# depending on how much memory the laptop can take before crashing.
+			prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
+			# calculate Jacobi-Davidson direction
+			srcBasis[:, itr] = bad_bicgstab_matrix(opt, theta, hRitzTrg,
+				hRitzSrc, prjCoeff, resVec)
+			trgBasis[:, itr] = opt * srcBasis[:, itr]
+			# orthogonalize
+			gramSchmidtHarm!(trgBasis, srcBasis, bCoeffs1, bCoeffs2, opt,
+				itr, tol)
+			# update inverse representation of opt^{-1} in trgBasis
+			kMat[1 : itr, itr] = BLAS.gemv('C', view(trgBasis, :, 1 : itr),
+				view(srcBasis, :, itr))
+			# assuming opt^{-1} Hermitian matrix
+			kMat[itr, 1 : (itr - 1)] = conj(kMat[1 : (itr-1), itr])
+			# eigenvalue decomposition, largest real eigenvalue last.
+			# should replace by BLAS operation
+			eigSys = eigen(view(kMat, 1 : itr, 1 : itr))
+			# update Ritz vector
+			# Sean code
+			# Not sure why there are two conditions and this code only gives the 
+			# smallest eigenvalue without considering that we want the smallest 
+			# positive eigenvalue. 
+			# if abs.(eigSys.values[end]) > abs.(eigSys.values[1])
+			# 	print("First cdn \n")
+			
+			# 	theta = 1/eigSys.values[end]
+			# 	hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, end])
+			# 	hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, end])
+			# else
+			# 	print("Second cdn \n")
+			# 	theta = 1/eigSys.values[1]
+			# 	hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
+			# 	hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
+			# end		
+
+			# A better way (in my honest opinion) would be to find the largest
+			# positive eigenvalue and then just do 1/it since that what we want.
+			# Let's find the largest positive eigenvalue found using the Julia 
+			# solver on kMat done above.
+			global max_eigval = 0
+			position = 1
+			for i in eachindex(eigSys.values)
+				if max_eigval < real(eigSys.values[i]) 
+					theta_tilde = real(eigSys.values[i])
+					position = i 
+					global max_eigval = real(theta_tilde)
+					# print("position ", position, "\n")
+					# print("Updated position ", i, " times \n")
+				end 
+				# print("i ", i, "\n")
+				# print("min_eigval ", min_eigval, "\n")
+			end 
+			theta = 1/max_eigval
+	
+
+			# update residual vector
+			resVec = (theta * hRitzSrc) .- hRitzTrg
+	 
+			# add tolerance check here
+			if norm(resVec) < tol
+				print("Converged off tolerance \n")
+				return real(theta) 
+				# println(real(theta))
+			end
+		end
+		println("Finished inner loop \n")
+
+		# Once we have ran out of memory, we want to restart the inner loop 
+		# but not with random starting vectors and matrices but with the ones
+		# from the last inner loop iteration that was done before running out 
+		# of memory. 
+
+	end 
+	print("Didn't converge off tolerance. Atteined max set number of iterations \n")
+	return real(theta)
+end
+
+
 # perform Gram-Schmidt on target basis, adjusting source basis accordingly
 function gramSchmidtHarm!(trgBasis::Array{T}, srcBasis::Array{T},
 	bCoeffs1::Vector{T}, bCoeffs2::Vector{T}, opt::Array{T}, n::Integer,
@@ -130,7 +315,7 @@ end
 function bad_bicgstab_matrix(A, theta, hTrg, hSrc, prjC, b)
 	dim = size(A)[1]
     v_m1 = p_m1 = xk_m1 = zeros(ComplexF64,length(b),1)
-    # tol = 1e-4
+    # tol = 1e-4a
     # Ax=0 since the initial xk is 0
     r0 = r_m1 = b
     rho_m1 = alpha = omega_m1 = 1
@@ -187,24 +372,54 @@ end
 # opt = [8.0 + im*0.0  -3.0 + im*0.0  2.0 + im*0.0;
 # 	-1.0 + im*0.0  3.0 + im*0.0  -1.0 + im*0.0;
 # 	1.0 + im*0.0  -1.0 + im*0.0  4.0 + im*0.0]
-sz = 256
-# opt = Array{ComplexF64}(undef,sz,sz)
-# rand!(opt)
+
+# For RND tests 
+sz = 336
+opt = Array{ComplexF64}(undef,sz,sz)
+rand!(opt)
 
 # For tests
-opt = [2.0 + im*0.0  -2.0 + im*0.0  0.0 + im*0.0;
-	-1.0 + im*0.0  3.0 + im*0.0  -1.0 + im*0.0;
-	0.0 + im*0.0  -1.0 + im*0.0  4.0 + im*0.0]
+# opt = [2.0 + im*0.0  -2.0 + im*0.0  0.0 + im*0.0;
+# 	-1.0 + im*0.0  3.0 + im*0.0  -1.0 + im*0.0;
+# 	0.0 + im*0.0  -1.0 + im*0.0  4.0 + im*0.0]
 opt[:,:] .= (opt .+ adjoint(opt)) ./ 2
 trueEigSys = eigen(opt)
-minEigPos = argmin(abs.(trueEigSys.values))
-minEig = trueEigSys.values[minEigPos]
-println("The smallest eigenvalue is ", minEig,".")
+julia_eigvals = trueEigSys.values 
+# print("julia_eigvals ", julia_eigvals,"\n")
+# Nic
+# print("trueEigSys ", trueEigSys, "\n")
+# Let's find the smallest positive eigenvalue found using the Julia solver
+global julia_min_eigval = 1000
+global position = 1
+for i in eachindex(julia_eigvals)
+	# print("real(julia_eigvals[i]) ", real(julia_eigvals[i]), "\n")
+	# print("min_eigval ", min_eigval, "\n")
+	if 0 < real(julia_eigvals[i]) < julia_min_eigval
+		theta_tilde = real(julia_eigvals[i])
+		global position = i 
+		global julia_min_eigval = real(theta_tilde)
+		# print("julia_min_eigval ", julia_min_eigval, "\n")
+		# print("position ", position, "\n")
+		# print("Updated position ", i, " times \n")
+	end 
+	# print("i ", i, "\n")
+	# print("min_eigval ", min_eigval, "\n")
+end  
+# Sean 
+# This gives the smalles eigenvalue and not the smallest positive eigenvalue 
+# minEigPos = argmin(abs.(trueEigSys.values))
+# minEig = trueEigSys.values[minEigPos]
+# println("Julia smallest positive eigenvalue is ", minEig,".")
 dims = size(opt)
 bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
 bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
 trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
-val = jacDavRitzHarm(trgBasis, srcBasis, kMat, opt, dims[1], dims[2], 1.0e-6)
-
+loopDim = 2
+eigval_basic = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],dims[2] , loopDim, 1.0e-6)
+eigval_restart = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],dims[2] , loopDim, 1.0e-6)
+# Int(dims[2]/2)
+print("No restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
+print("Restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
+println("Julia smallest positive eigenvalue is ", julia_min_eigval,"\n")
