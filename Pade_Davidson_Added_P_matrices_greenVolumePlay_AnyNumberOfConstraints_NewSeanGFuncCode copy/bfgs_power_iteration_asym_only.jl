@@ -234,7 +234,7 @@ end
 
 # mineigfunc is the power_iteration_second_evaluation function
 # l = initdof
-function BFGS_fakeS_with_restart_pi(gMemSlfN, gMemSlfA,l,l2,dgfunc,P,chi_inv_coeff,ei,cellsA,validityfunc, 
+function BFGS_fakeS_with_restart_pi(gMemSlfN, gMemSlfA,xeta,l,l2,dgfunc,P,chi_inv_coeff,ei,cellsA,validityfunc, 
     mineigfunc, gradConverge=false, opttol=1e-2, fakeSratio=1e-2, reductFactor=0.1, iter_period=20, min_iter=6)
     # print("Entered BFGS")
     og_l = l

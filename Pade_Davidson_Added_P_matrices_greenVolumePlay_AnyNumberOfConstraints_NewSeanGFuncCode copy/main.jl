@@ -58,7 +58,10 @@ nb_complex_P = 0 + 1  # +1 for the number of complex constraint because the 0th 
 nb_real_P =  0 # 4
 P = Ps(cellsA, nb_complex_P, nb_real_P)
 
-# Let's generate some random starting Lagrange multiplier values 
+# Let's generate some random starting Lagrange multiplier values except for 
+# the one for the 0th constraint (P is the complex identity matrix)
+
+xeta = rand(0.01:3)
 multipliers = L_mults(nb_complex_P,nb_real_P)
 # +1 for the number of complex constraint because the 0th constraint 
 # is the asym only constraint that is the complex identity matrix 
@@ -71,7 +74,7 @@ print("l2 ", l2, "\n")
 # This is the code for the main function call using bfgs with the power iteration
 # method to solve for the Lagrange multiplier and gmres to solve for |T>.
 # # Start 
-bfgs = BFGS_fakeS_with_restart_pi(gMemSlfN,gMemSlfA,l,l2,dual,P,chi_inv_coeff,ei,
+bfgs = BFGS_fakeS_with_restart_pi(gMemSlfN,gMemSlfA,xeta,l,l2,dual,P,chi_inv_coeff,ei,
 cellsA,validityfunc,power_iteration_second_evaluation)
 # the BFGS_fakeS_with_restart_pi function can be found in the bfgs_power_iteration_asym_only file
 dof = bfgs[1]
