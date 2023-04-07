@@ -154,6 +154,8 @@ P = I # this is the real version of the identity matrix since we are considering
 Pdag = P
 # let's get the initial b vector (aka using the initial Lagrange multipliers). Done for test purposes
 # b = bv(ei, l,P)
+xeta = 0.3 # Initial Lagrange multiplier for the asym constraint that is always
+# there, so the one associated to the complete complex identity matrix for P.
 l = [0.25, 0.75] # initial Lagrange multipliers
 
 # This is the code for the main function call using bfgs with the power iteration
