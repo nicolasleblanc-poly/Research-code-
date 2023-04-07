@@ -148,6 +148,13 @@ chi_inv_coeff_dag = conj(chi_inv_coeff)
 
 # What is the length of P? How do we fill in P precisely?
 
+# P matrix for the xeta Lagrange multiplier 
+M = ones(ComplexF64,cellsA[1],cellsA[2],cellsA[3],3)
+M[:, :, :,:] .= 1.0im
+N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+P0 = Diagonal(N)
+
+
 P = I # this is the real version of the identity matrix since we are considering 
 # the symmetric and ansymmetric parts of some later calculations. 
 # If we were only considering the symmetric parts of some latter calculations,
