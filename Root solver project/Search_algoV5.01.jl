@@ -163,18 +163,19 @@ function convexity_test(x,y, display_plot = false)
                 slope = (p3[2] - p1[2])/(p3[1] - p1[1])
                 intercept = p1[2] - slope*(p1[1])
                 Y = slope*p2[1] + intercept
-                if display_plot  == true
-                    small_x = [i for i in range(p1[1], p3[1],10)]
-                    small_y = [(slope*i + intercept) for i in small_x]
-                    plt = plot(px,py, ylim=(ymin,ymax), legend = false)
-                    #plot!(x,y, markershape = :circle, color = :black)
-                    plot!(small_x, small_y)
-                    plot!([p1[1]], [p1[2]], markershape = :circle, color = :green)
-                    plot!([p3[1]], [p3[2]], markershape = :circle, color = :blue)
-                    plot!([p2[1]], [p2[2]], markershape = :circle, color = :red)
-                    display(plt)#necessary to display the graph (equivalent to plt.show() in python)
-                    #sleep(0.1)  #delay to allow for the graph to display
-                end
+                # I commented out the plots (Nic)
+                # if display_plot  == true
+                #     small_x = [i for i in range(p1[1], p3[1],10)]
+                #     small_y = [(slope*i + intercept) for i in small_x]
+                #     plt = plot(px,py, ylim=(ymin,ymax), legend = false)
+                #     #plot!(x,y, markershape = :circle, color = :black)
+                #     plot!(small_x, small_y)
+                #     plot!([p1[1]], [p1[2]], markershape = :circle, color = :green)
+                #     plot!([p3[1]], [p3[2]], markershape = :circle, color = :blue)
+                #     plot!([p2[1]], [p2[2]], markershape = :circle, color = :red)
+                #     display(plt)#necessary to display the graph (equivalent to plt.show() in python)
+                #     #sleep(0.1)  #delay to allow for the graph to display
+                # end
                 if Y > p2[2]
                     println("sampled point  ",p2[2])
                     println("pedicted point ", Y)
@@ -428,10 +429,11 @@ global compt = 0
 
 function big_boiii(display_plot = false)
     local plt
-    if display_plot ==true
-        plt = plot(x_sampled,y_sampled, markershape = :circle, color = :green, linewidth = 0, legend = false, ylim =(ymin,ymax),xlim =(xmin,xmax))
-        plot!(px,py)
-    end
+    # I commented the plots (Nic)
+    # if display_plot ==true
+    #     plt = plot(x_sampled,y_sampled, markershape = :circle, color = :green, linewidth = 0, legend = false, ylim =(ymin,ymax),xlim =(xmin,xmax))
+    #     plot!(px,py)
+    # end
     #the stopping critera is that the error between padés need to diminish
     #for two consecutives  sampling
     while stop_crit == false
@@ -491,17 +493,19 @@ function big_boiii(display_plot = false)
         #checks if this sampling has changed something about our evaluation
         pade_stop_criteria(x_sampled[index:end], y_sampled[index:end],xn)
         #plots the different padés (if needed)
-        if display_plot==true
-            for i in range(1,length(big_x_sampled))
-                local pade_x, pade_y
-                N=5000
-                pade_x, pade_y = Pade(big_x_sampled[i],big_y_sampled[i],N=N,xl = xn)
-                plot!(pade_x,pade_y)
-                plot!(x_sampled,y_sampled, markershape = :circle, linewidth = 0, color = :green)
-            end
-            display(plt)
-            sleep(1)
-        end
+
+        # I commented out the plots (Nic)
+        # if display_plot==true
+        #     for i in range(1,length(big_x_sampled))
+        #         local pade_x, pade_y
+        #         N=5000
+        #         pade_x, pade_y = Pade(big_x_sampled[i],big_y_sampled[i],N=N,xl = xn)
+        #         plot!(pade_x,pade_y)
+        #         plot!(x_sampled,y_sampled, markershape = :circle, linewidth = 0, color = :green)
+        #     end
+        #     display(plt)
+        #     sleep(1)
+        # end
         compt+=1
     end
 
