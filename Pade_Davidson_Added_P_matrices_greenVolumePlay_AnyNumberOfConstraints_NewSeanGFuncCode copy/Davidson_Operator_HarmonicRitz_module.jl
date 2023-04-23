@@ -1,6 +1,17 @@
+module Davidson_Operator_HarmonicRitz_module
 
-using LinearAlgebra, Random
-function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, tol::Float64)::Float64
+using LinearAlgebra, LinearAlgebra.BLAS, Distributed, FFTW, Cubature, 
+Base.Threads, FastGaussQuadrature, MaxGStructs, MaxGCirc, MaxGBasisIntegrals, 
+MaxGOpr, Printf, MaxGParallelUtilities, MaxGCUDA, Random, 
+product, bfgs_power_iteration_asym_only, dual_asym_only, gmres,
+phys_setup, opt_setup, Av_product_Davidson
+
+function jacDavRitzHarm(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
+	P,alpha,trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}, 
+	kMat::Array{ComplexF64}, vecDim::Integer, 
+	repDim::Integer, tol::Float64)::Float64
+	# opt::Array{ComplexF64},
+
 	### memory initialization
 	resVec = Vector{ComplexF64}(undef, vecDim)
 	hRitzTrg = Vector{ComplexF64}(undef, vecDim)
@@ -16,8 +27,8 @@ function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}
 
 	# G operator product 
 	# trgBasis[:, 1] = opt * srcBasis[:, 1]
-	trgBasis[:, 1] = sym_and_asym_sum(l,l2,gMemSlfN,gMemSlfA, cellsA, 
-		chi_inv_coeff, P, srcBasis[:, 1])
+	trgBasis[:, 1] = A_v_product(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
+		P,alpha,srcBasis[:, 1])
 
 	nrm = BLAS.nrm2(vecDim, view(trgBasis,:,1), 1)
 	trgBasis[:, 1] = trgBasis[:, 1] ./ nrm
@@ -36,17 +47,18 @@ function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}
 	for itr in 2 : repDim
 		prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
 		# calculate Jacobi-Davidson direction
-		srcBasis[:, itr] = bad_bicgstab_matrix(opt, theta, hRitzTrg,
-			hRitzSrc, prjCoeff, resVec)
+		srcBasis[:, itr] = bad_bicgstab_matrix(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
+			P,alpha, theta, hRitzTrg, hRitzSrc, prjCoeff, resVec)
 
 		# G operator product 
 		# trgBasis[:, itr] = opt * srcBasis[:, itr]
-		trgBasis[:, itr] = sym_and_asym_sum(l,l2,gMemSlfN,gMemSlfA, cellsA, 
-		chi_inv_coeff, P, srcBasis[:, itr])
+		trgBasis[:, itr] = A_v_product(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
+		P,alpha,srcBasis[:, itr])
 
 		# orthogonalize
-		gramSchmidtHarm!(trgBasis, srcBasis, bCoeffs1, bCoeffs2, opt,
-			itr, tol)
+		gramSchmidtHarm!(trgBasis, srcBasis, bCoeffs1, bCoeffs2, gMemSlfN,
+		gMemSlfA,cellsA,chi_inv_coeff,P,alpha,itr, tol)
+
 		# update inverse representation of opt^{-1} in trgBasis
 		kMat[1 : itr, itr] = BLAS.gemv('C', view(trgBasis, :, 1 : itr),
 			view(srcBasis, :, itr))
@@ -79,8 +91,8 @@ function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}
 end
 # perform Gram-Schmidt on target basis, adjusting source basis accordingly
 function gramSchmidtHarm!(trgBasis::Array{T}, srcBasis::Array{T},
-	bCoeffs1::Vector{T}, bCoeffs2::Vector{T}, opt::Array{T}, n::Integer,
-	tol::Float64) where T <: Number
+	bCoeffs1::Vector{T}, bCoeffs2::Vector{T}, gMemSlfN,gMemSlfA,cellsA,
+		chi_inv_coeff,P,alpha, n::Integer,tol::Float64) where T <: Number
 	# dimension of vector space
 	dim = size(trgBasis)[1]
 	# initialize projection norm
@@ -121,11 +133,11 @@ function gramSchmidtHarm!(trgBasis::Array{T}, srcBasis::Array{T},
 
 		# G operator product 
 		# trgBasis[:, n] = opt * srcBasis[:, n]
-		trgBasis[:, n] = sym_and_asym_sum(l,l2,gMemSlfN,gMemSlfA, cellsA, 
-		chi_inv_coeff, P, srcBasis[:, n])
+		trgBasis[:, n] = A_v_product(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
+		P,alpha,srcBasis[:, n])
 
 		gramSchmidtHarm!(trgBasis, srcBasis, bCoeffs1, bCoeffs2,
-			opt, n, tol)
+			gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,alpha, n, tol)
 	else
 		# renormalize
 		trgBasis[:,n] = trgBasis[:,n] ./ nrm
@@ -213,18 +225,19 @@ end
 # opt = [8.0 + im*0.0  -3.0 + im*0.0  2.0 + im*0.0;
 # 	-1.0 + im*0.0  3.0 + im*0.0  -1.0 + im*0.0;
 # 	1.0 + im*0.0  -1.0 + im*0.0  4.0 + im*0.0]
-sz = 256
-opt = Array{ComplexF64}(undef,sz,sz)
-rand!(opt)
-opt[:,:] .= (opt .+ adjoint(opt)) ./ 2
-trueEigSys = eigen(opt)
-minEigPos = argmin(abs.(trueEigSys.values))
-minEig = trueEigSys.values[minEigPos]
-println("The smallest eigenvalue is ", minEig,".")
-dims = size(opt)
-bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
-bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
-trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
-srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
-kMat = zeros(ComplexF64, dims[2], dims[2])
-val = jacDavRitzHarm(trgBasis, srcBasis, kMat, opt, dims[1], dims[2], 1.0e-6)
+
+# sz = 256
+# opt = Array{ComplexF64}(undef,sz,sz)
+# rand!(opt)
+# opt[:,:] .= (opt .+ adjoint(opt)) ./ 2
+# trueEigSys = eigen(opt)
+# minEigPos = argmin(abs.(trueEigSys.values))
+# minEig = trueEigSys.values[minEigPos]
+# println("The smallest eigenvalue is ", minEig,".")
+# dims = size(opt)
+# bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
+# bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
+# trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
+# srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
+# kMat = zeros(ComplexF64, dims[2], dims[2])
+# val = jacDavRitzHarm(trgBasis, srcBasis, kMat, opt, dims[1], dims[2], 1.0e-6)

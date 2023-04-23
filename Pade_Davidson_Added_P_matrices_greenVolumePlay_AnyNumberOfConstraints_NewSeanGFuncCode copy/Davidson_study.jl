@@ -66,5 +66,9 @@ chi_inv_coeff_dag = conj(chi_inv_coeff)
 alpha = 1e-3 
 
 
-
+chi_inv_coeff_dag = conj(chi_inv_coeff)
+term_1 = chi_inv_coeff_dag*vec # *P 
+term_2 = GAdjv_AA(gMemSlfA, cellsA, vec) # P*
+term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
+term_4 = Gv_AA(gMemSlfN, cellsA, vec) # P*
 
