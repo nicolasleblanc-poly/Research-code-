@@ -54,8 +54,8 @@ function jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
 			hRitzSrc = Vector{ComplexF64}(undef, vecDim)
 			bCoeffs1 = Vector{ComplexF64}(undef, repDim)
 			bCoeffs2 = Vector{ComplexF64}(undef, repDim)
-			trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
-			srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
+			trgBasis = Array{ComplexF64}(undef, vecDim, vecDim) # dims[1],dims[2]
+			srcBasis = Array{ComplexF64}(undef, vecDim, vecDim) # dims[1],dims[2]
 			# rand!(view(srcBasis, :, 1)) # vk
 			srcBasis[:,1] = srcBasis[:,end]
 			# normalize starting vector
