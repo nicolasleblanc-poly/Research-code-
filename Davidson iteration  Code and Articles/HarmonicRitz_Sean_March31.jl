@@ -106,7 +106,11 @@ function jacDavRitzHarm_basic(trgBasis::Array{ComplexF64}, srcBasis::Array{Compl
 end
 
 
-function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, loopDim::Integer,tol::Float64)::Float64
+function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, 
+	srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, 
+	opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, 
+	loopDim::Integer,tol::Float64)::Float64
+
 	### memory initialization
 	resVec = Vector{ComplexF64}(undef, vecDim)
 	hRitzTrg = Vector{ComplexF64}(undef, vecDim)
@@ -417,8 +421,12 @@ trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
 loopDim = 2
-eigval_basic = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],dims[2] , loopDim, 1.0e-6)
-eigval_restart = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],dims[2] , loopDim, 1.0e-6)
+eigval_basic = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],dims[2] , loopDim, 1.0e-3)
+# jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, 
+# 	srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, 
+# 	opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, 
+# 	loopDim::Integer,tol::Float64)::Float64
+eigval_restart = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],dims[2] , loopDim, 1.0e-3)
 # Int(dims[2]/2)
 print("No restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
 print("Restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")

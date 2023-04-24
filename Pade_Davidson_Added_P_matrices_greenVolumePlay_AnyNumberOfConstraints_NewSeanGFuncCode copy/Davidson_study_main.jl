@@ -2,7 +2,7 @@ using LinearAlgebra, LinearAlgebra.BLAS, Distributed, FFTW, Cubature,
 Base.Threads, FastGaussQuadrature, MaxGStructs, MaxGCirc, MaxGBasisIntegrals, 
 MaxGOpr, Printf, MaxGParallelUtilities, MaxGCUDA, Random, 
 product, bfgs_power_iteration_asym_only, dual_asym_only, gmres,
-phys_setup, opt_setup
+phys_setup, opt_setup, Davidson_Operator_HarmonicRitz_module
 
 """
 Before jumping to larger system with the Davidson iteration method, using 
@@ -48,8 +48,14 @@ gMemSlfN = G_call[1]
 gMemSlfA = G_call[2]
 gMemExtN = G_call[3]
 
-# P matrix creation 
-diagonal = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
+# # P matrix creation 
+# M = ones(ComplexF64,cellsA[1],cellsA[2],cellsA[3],3)
+# M[:, :, :,:] .= 1.0im
+# N = reshape(M, cellsA[1]*cellsA[2]*cellsA[3]*3)
+# P0 = Diagonal(N)
+# print("P0 ", P0, "\n")
+
+diagonal = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3)
 rand!(diagonal)
 P = Diagonal(diagonal)
 print("P ", P, "\n")
@@ -66,9 +72,24 @@ chi_inv_coeff_dag = conj(chi_inv_coeff)
 alpha = 1e-3 
 
 
-chi_inv_coeff_dag = conj(chi_inv_coeff)
-term_1 = chi_inv_coeff_dag*vec # *P 
-term_2 = GAdjv_AA(gMemSlfA, cellsA, vec) # P*
-term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
-term_4 = Gv_AA(gMemSlfN, cellsA, vec) # P*
+tol = 1e-3 # Loose tolerance 
+# tol = 1e-6 # Tight tolerance 
 
+# (cellsA[1]*cellsA[2]*cellsA[3]*3,1)
+# dims = size(opt)
+trgBasis = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 
+	cellsA[1]*cellsA[2]*cellsA[3]*3)
+srcBasis = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 
+	cellsA[1]*cellsA[2]*cellsA[3]*3)
+kMat = zeros(ComplexF64, cellsA[1]*cellsA[2]*cellsA[3]*3, 
+	cellsA[1]*cellsA[2]*cellsA[3]*3)
+vecDim = cellsA[1]*cellsA[2]*cellsA[3]*3
+repDim = cellsA[1]*cellsA[2]*cellsA[3]*3
+restartDim = 2
+loopDim = 2
+
+
+fct_call = jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
+	P,alpha,trgBasis,srcBasis, kMat, vecDim, repDim, restartDim,loopDim,tol)
+
+print("fct_call ", fct_call, "\n")
