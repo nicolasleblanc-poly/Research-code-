@@ -105,7 +105,12 @@ function jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
 			kMat[itr, 1 : (itr - 1)] = conj(kMat[1 : (itr-1), itr])
 			# eigenvalue decomposition, largest real eigenvalue last.
 			# should replace by BLAS operation
+
+			print("kMat ", kMat, "\n")
+
 			eigSys = eigen(view(kMat, 1 : itr, 1 : itr))
+
+			print("eigSys.values ", eigSys.values, "\n")
 
 			global max_eigval = 0
 			position = 1
@@ -282,110 +287,3 @@ function bad_bicgstab_matrix(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
     return xk_m1
 end
 end 
-### testing
-# opt = [8.0 + im*0.0  -3.0 + im*0.0  2.0 + im*0.0;
-# 	-1.0 + im*0.0  3.0 + im*0.0  -1.0 + im*0.0;
-# 	1.0 + im*0.0  -1.0 + im*0.0  4.0 + im*0.0]
-
-# sz = 256
-# opt = Array{ComplexF64}(undef,sz,sz)
-# rand!(opt)
-# opt[:,:] .= (opt .+ adjoint(opt)) ./ 2
-# trueEigSys = eigen(opt)
-# minEigPos = argmin(abs.(trueEigSys.values))
-# minEig = trueEigSys.values[minEigPos]
-# println("The smallest eigenvalue is ", minEig,".")
-# dims = size(opt)
-# bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
-# bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
-# trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
-# srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
-# kMat = zeros(ComplexF64, dims[2], dims[2])
-# val = jacDavRitzHarm(trgBasis, srcBasis, kMat, opt, dims[1], dims[2], 1.0e-6)
-
-
-
-
-# function jacDavRitzHarm(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
-# 	P,alpha,trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}, 
-# 	kMat::Array{ComplexF64}, vecDim::Integer, 
-# 	repDim::Integer, tol::Float64)::Float64
-# 	# opt::Array{ComplexF64},
-
-# 	### memory initialization
-# 	resVec = Vector{ComplexF64}(undef, vecDim)
-# 	hRitzTrg = Vector{ComplexF64}(undef, vecDim)
-# 	hRitzSrc = Vector{ComplexF64}(undef, vecDim)
-# 	bCoeffs1 = Vector{ComplexF64}(undef, repDim)
-# 	bCoeffs2 = Vector{ComplexF64}(undef, repDim)
-# 	# set starting vector
-# 	rand!(view(srcBasis, :, 1))
-# 	# normalize starting vector
-# 	nrm = BLAS.nrm2(vecDim, view(srcBasis,:,1), 1)
-# 	srcBasis[:, 1] = srcBasis[:, 1] ./ nrm
-# 	### algorithm initialization
-
-# 	# G operator product 
-# 	# trgBasis[:, 1] = opt * srcBasis[:, 1]
-# 	trgBasis[:, 1] = A_v_product(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
-# 		P,alpha,srcBasis[:, 1])
-
-# 	nrm = BLAS.nrm2(vecDim, view(trgBasis,:,1), 1)
-# 	trgBasis[:, 1] = trgBasis[:, 1] ./ nrm
-# 	srcBasis[:, 1] = srcBasis[:, 1] ./ nrm
-# 	# representation of opt^{-1} in trgBasis
-# 	kMat[1,1] = BLAS.dotc(vecDim, view(trgBasis, :, 1), 1,
-# 		view(srcBasis, :, 1), 1)
-# 	# Ritz value
-# 	eigPos = 1
-# 	theta = 1 / kMat[1,1]
-# 	# Ritz vectors
-# 	hRitzTrg[:] = trgBasis[:, 1]
-# 	hRitzSrc[:] = srcBasis[:, 1]
-# 	# Negative residual vector
-# 	resVec = (theta .* hRitzSrc) .- hRitzTrg
-# 	for itr in 2 : repDim
-# 		prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
-# 		# calculate Jacobi-Davidson direction
-# 		srcBasis[:, itr] = bad_bicgstab_matrix(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
-# 			P,alpha, theta, hRitzTrg, hRitzSrc, prjCoeff, resVec)
-
-# 		# G operator product 
-# 		# trgBasis[:, itr] = opt * srcBasis[:, itr]
-# 		trgBasis[:, itr] = A_v_product(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
-# 		P,alpha,srcBasis[:, itr])
-
-# 		# orthogonalize
-# 		gramSchmidtHarm!(trgBasis, srcBasis, bCoeffs1, bCoeffs2, gMemSlfN,
-# 		gMemSlfA,cellsA,chi_inv_coeff,P,alpha,itr, tol)
-
-# 		# update inverse representation of opt^{-1} in trgBasis
-# 		kMat[1 : itr, itr] = BLAS.gemv('C', view(trgBasis, :, 1 : itr),
-# 			view(srcBasis, :, itr))
-# 		# assuming opt^{-1} Hermitian matrix
-# 		kMat[itr, 1 : (itr - 1)] = conj(kMat[1 : (itr-1), itr])
-# 		# eigenvalue decomposition, largest real eigenvalue last.
-# 		# should replace by BLAS operation
-# 		eigSys = eigen(view(kMat, 1 : itr, 1 : itr))
-# 		# update Ritz vector
-# 		if abs.(eigSys.values[end]) > abs.(eigSys.values[1])
-		
-# 			theta = 1/eigSys.values[end]
-# 			hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, end])
-# 			hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, end])
-# 		else
-		
-# 			theta = 1/eigSys.values[1]
-# 			hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
-# 			hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
-# 		end		
-# 		# update residual vector
-# 		resVec = (theta * hRitzSrc) .- hRitzTrg
-# 		# add tolerance check here
-# 		if mod(itr,32) == 0
-			
-# 			println(real(theta))
-# 		end
-# 	end
-# 	return real(theta)
-# end

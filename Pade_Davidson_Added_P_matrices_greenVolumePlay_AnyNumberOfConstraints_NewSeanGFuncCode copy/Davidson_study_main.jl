@@ -69,7 +69,7 @@ chi_inv_coeff_dag = conj(chi_inv_coeff)
 
 # alpha is a parameter that we will play with to get a positive smallest 
 # eigenvalue of our system 
-alpha = 1e-3 
+alpha = 1e-6 
 
 
 tol = 1e-3 # Loose tolerance 
@@ -92,4 +92,4 @@ loopDim = 2
 fct_call = jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
 	P,alpha,trgBasis,srcBasis, kMat, vecDim, repDim, restartDim,loopDim,tol)
 
-print("fct_call ", fct_call, "\n")
+print("The smallest eigenvalue is ", fct_call, "\n")

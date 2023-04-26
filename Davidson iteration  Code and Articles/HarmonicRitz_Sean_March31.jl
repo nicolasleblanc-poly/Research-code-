@@ -47,29 +47,7 @@ function jacDavRitzHarm_basic(trgBasis::Array{ComplexF64}, srcBasis::Array{Compl
 		# eigenvalue decomposition, largest real eigenvalue last.
 		# should replace by BLAS operation
 		eigSys = eigen(view(kMat, 1 : itr, 1 : itr))
-		# print("eigSys.values ", eigSys.values, "\n")
-		# print("eigSys.values[1] ", eigSys.values[1], "\n")
-		# print("eigSys.values[end] ", eigSys.values[end], "\n")
-		# print("1/eigSys.values[1] ", 1/eigSys.values[1], "\n")
-		# print("1/eigSys.values[end] ", 1/eigSys.values[end], "\n")
-
-		# update Ritz vector
-		# Sean code
-		# Not sure why there are two conditions and this code only gives the 
-		# smallest eigenvalue without considering that we want the smallest 
-		# positive eigenvalue. 
-		# if abs.(eigSys.values[end]) > abs.(eigSys.values[1])
-		# 	print("First cdn \n")
-		
-		# 	theta = 1/eigSys.values[end]
-		# 	hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, end])
-		# 	hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, end])
-		# else
-		# 	print("Second cdn \n")
-		# 	theta = 1/eigSys.values[1]
-		# 	hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
-		# 	hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
-		# end		
+	
 
 		# A better way (in my honest opinion) would be to find the largest
 		# positive eigenvalue and then just do 1/it since that what we want.
@@ -194,28 +172,7 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 			# eigenvalue decomposition, largest real eigenvalue last.
 			# should replace by BLAS operation
 			eigSys = eigen(view(kMat, 1 : itr, 1 : itr))
-			# update Ritz vector
-			# Sean code
-			# Not sure why there are two conditions and this code only gives the 
-			# smallest eigenvalue without considering that we want the smallest 
-			# positive eigenvalue. 
-			# if abs.(eigSys.values[end]) > abs.(eigSys.values[1])
-			# 	print("First cdn \n")
-			
-			# 	theta = 1/eigSys.values[end]
-			# 	hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, end])
-			# 	hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, end])
-			# else
-			# 	print("Second cdn \n")
-			# 	theta = 1/eigSys.values[1]
-			# 	hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
-			# 	hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
-			# end		
-
-			# A better way (in my honest opinion) would be to find the largest
-			# positive eigenvalue and then just do 1/it since that what we want.
-			# Let's find the largest positive eigenvalue found using the Julia 
-			# solver on kMat done above.
+	
 			global max_eigval = 0
 			position = 1
 			for i in eachindex(eigSys.values)
@@ -253,7 +210,6 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 	print("Didn't converge off tolerance. Atteined max set number of iterations \n")
 	return real(theta)
 end
-
 
 # perform Gram-Schmidt on target basis, adjusting source basis accordingly
 function gramSchmidtHarm!(trgBasis::Array{T}, srcBasis::Array{T},
@@ -309,6 +265,60 @@ function gramSchmidtHarm!(trgBasis::Array{T}, srcBasis::Array{T},
  			view(bCoeffs1, 1:(n-1)), 1.0 + im*0.0, view(srcBasis, :, n))
 	end
 end
+# # perform Gram-Schmidt on target basis, adjusting source basis accordingly
+# function gramSchmidtHarm!(trgBasis::Array{T}, srcBasis::Array{T},
+# 	bCoeffs1::Vector{T}, bCoeffs2::Vector{T}, opt::Array{T}, n::Integer,
+# 	tol::Float64) where T <: Number
+# 	# dimension of vector space
+# 	dim = size(trgBasis)[1]
+# 	# initialize projection norm
+# 	prjNrm = 1.0
+# 	# initialize projection coefficient memory
+# 	bCoeffs1[1:(n-1)] .= 0.0 + im*0.0
+# 	# check that basis does not exceed dimension
+# 	if n > dim
+# 		error("Requested basis size exceeds dimension of vector space.")
+# 	end
+# 	# norm of proposed vector
+# 	nrm = BLAS.nrm2(dim, view(trgBasis,:,n), 1)
+# 	# renormalize new vector
+# 	trgBasis[:,n] = trgBasis[:,n] ./ nrm
+# 	srcBasis[:,n] = srcBasis[:,n] ./ nrm
+# 	# guarded orthogonalization
+# 	while prjNrm > (tol * 100) && abs(nrm) > tol
+# 		### remove projection into existing basis
+#  		# calculate projection coefficients
+#  		BLAS.gemv!('C', 1.0 + im*0.0, view(trgBasis, :, 1:(n-1)),
+#  			view(trgBasis, :, n), 0.0 + im*0.0,
+#  			view(bCoeffs2, 1:(n -1)))
+#  		# remove projection coefficients
+#  		BLAS.gemv!('N', -1.0 + im*0.0, view(trgBasis, :, 1:(n-1)),
+#  			view(bCoeffs2, 1:(n -1)), 1.0 + im*0.0,
+#  			view(trgBasis, :, n))
+#  		# update total projection coefficients
+#  		bCoeffs1 .= bCoeffs2 .+ bCoeffs1
+#  		# calculate projection norm
+#  		prjNrm = BLAS.nrm2(n-1, bCoeffs2, 1)
+#  	end
+#  	# remaining norm after removing projections
+#  	nrm = BLAS.nrm2(dim, view(trgBasis,:,n), 1)
+# 	# check that remaining vector is sufficiently large
+# 	if abs(nrm) < tol
+# 		# switch to random search direction
+# 		rand!(view(srcBasis, :, n))
+# 		trgBasis[:, n] = opt * srcBasis[:, n]
+# 		gramSchmidtHarm!(trgBasis, srcBasis, bCoeffs1, bCoeffs2,
+# 			opt, n, tol)
+# 	else
+# 		# renormalize
+# 		trgBasis[:,n] = trgBasis[:,n] ./ nrm
+# 		srcBasis[:,n] = srcBasis[:,n] ./ nrm
+# 		bCoeffs1 .= bCoeffs1 ./ nrm
+# 		# remove projections from source vector
+# 		BLAS.gemv!('N', -1.0 + im*0.0, view(srcBasis, :, 1:(n-1)),
+#  			view(bCoeffs1, 1:(n-1)), 1.0 + im*0.0, view(srcBasis, :, n))
+# 	end
+# end
 # pseudo-projections for harmonic Ritz vector calculations
 @inline function harmVec(dim::Integer, pTrg::Vector{T}, pSrc::Vector{T},
 	prjCoeff::Number, sVec::Array{T})::Array{T} where T <: Number
@@ -426,7 +436,15 @@ eigval_basic = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],dims[
 # 	srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, 
 # 	opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, 
 # 	loopDim::Integer,tol::Float64)::Float64
-eigval_restart = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],dims[2] , loopDim, 1.0e-3)
+
+dims = size(opt)
+bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
+bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
+trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
+srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
+kMat = zeros(ComplexF64, dims[2], dims[2])
+loopDim = 2
+eigval_restart = jacDavRitzHarm_restart(trgBasis, srcBasis, kMat, opt, dims[1],dims[2] , loopDim, 1.0e-3)
 # Int(dims[2]/2)
 print("No restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
 print("Restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
