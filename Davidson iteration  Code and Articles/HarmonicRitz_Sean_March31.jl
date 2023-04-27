@@ -77,9 +77,11 @@ function jacDavRitzHarm_basic(trgBasis::Array{ComplexF64}, srcBasis::Array{Compl
 			return real(theta) 
 			# println(real(theta))
 		end
+		print("norm(resVec) basic program ", norm(resVec),"\n")
 	end
  
-	print("Didn't converge off tolerance. Atteined max set number of iterations \n")
+	print("Didn't converge off tolerance for basic program. 
+		Atteined max set number of iterations \n")
 	return real(theta)
 end
 
@@ -87,7 +89,9 @@ end
 function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, 
 	srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, 
 	opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, 
-	loopDim::Integer,tol::Float64)::Float64
+	restartDim::Integer,innerLoopDim::Integer,tol::Float64)::Float64
+
+	restart_srcBasis = Vector{ComplexF64}(undef, vecDim)
 
 	### memory initialization
 	resVec = Vector{ComplexF64}(undef, vecDim)
@@ -117,9 +121,11 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 	# Negative residual vector
 	resVec = (theta .* hRitzSrc) .- hRitzTrg # theta_tilde*vk - wk
 
+	# innerLoopDim = Int(repDim/4)
+
 	# Code with restart
 	# Outer loop
-	for it in 1:5 # Need to think this over 
+	for it in 1:restartDim # Need to think this over 
 		# Inner loop
 		if it > 1
 			# Before we restart, we will create a new version of everything 
@@ -131,7 +137,12 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 			trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 			srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 			# rand!(view(srcBasis, :, 1)) # vk
-			srcBasis[:,1] = srcBasis[:,end]
+			# srcBasis[:,1] = srcBasis[:,end]
+			# print("srcBasis[:,end] ", srcBasis[:,end],"\n")
+			srcBasis[:,1] = restart_srcBasis
+			# srcBasis[:,innerLoopDim]
+			print("restart_srcBasis ", restart_srcBasis,"\n")
+
 			# normalize starting vector
 			nrm = BLAS.nrm2(vecDim, view(srcBasis,:,1), 1) # norm(vk)
 			srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
@@ -153,8 +164,8 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 			resVec = (theta .* hRitzSrc) .- hRitzTrg # theta_tilde*vk - wk
 
 		end
-
-		for itr in 2 : Int(repDim/4) # Need to determine when this for loops stops 
+		# innerLoopDim = Int(repDim/4)
+		for itr in 2 : innerLoopDim # Need to determine when this for loops stops 
 			# depending on how much memory the laptop can take before crashing.
 			prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
 			# calculate Jacobi-Davidson direction
@@ -198,7 +209,9 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 				return real(theta) 
 				# println(real(theta))
 			end
+			print("norm(resVec) restart program ", norm(resVec),"\n")
 		end
+		restart_srcBasis = srcBasis[:,innerLoopDim]
 		println("Finished inner loop \n")
 
 		# Once we have ran out of memory, we want to restart the inner loop 
@@ -207,7 +220,8 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 		# of memory. 
 
 	end 
-	print("Didn't converge off tolerance. Atteined max set number of iterations \n")
+	print("Didn't converge off tolerance for restart program. 
+		Atteined max set number of iterations \n")
 	return real(theta)
 end
 
@@ -388,7 +402,7 @@ end
 # 	1.0 + im*0.0  -1.0 + im*0.0  4.0 + im*0.0]
 
 # For RND tests 
-sz = 336
+sz = 20
 opt = Array{ComplexF64}(undef,sz,sz)
 rand!(opt)
 
@@ -443,9 +457,11 @@ bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
 trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
-loopDim = 2
-eigval_restart = jacDavRitzHarm_restart(trgBasis, srcBasis, kMat, opt, dims[1],dims[2] , loopDim, 1.0e-3)
+innerLoopDim = 200
+restartDim = 20
+eigval_restart = jacDavRitzHarm_restart(trgBasis,srcBasis,kMat,opt,dims[1],
+	dims[2],innerLoopDim,restartDim,1.0e-3)
 # Int(dims[2]/2)
 print("No restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
-print("Restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
+print("Restart - HarmonicRitz smallest positive eigenvalue is ", eigval_restart, "\n")
 println("Julia smallest positive eigenvalue is ", julia_min_eigval,"\n")

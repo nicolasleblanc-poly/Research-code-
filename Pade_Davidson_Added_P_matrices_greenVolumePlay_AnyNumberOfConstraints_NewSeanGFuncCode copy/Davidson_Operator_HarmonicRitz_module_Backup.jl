@@ -7,42 +7,32 @@ product, Av_product_Davidson
 
 export jacDavRitzHarm_restart
 
-# function jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
-# 	P,alpha,trgBasis::Array{ComplexF64},srcBasis::Array{ComplexF64}, 
-# 	kMat::Array{ComplexF64}, vecDim::Integer, repDim::Integer, 
-# 	restartLoopDim::Integer,innerLoopDim::Integer,tol::Float64)::Float64
-function jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
-	P,alpha,restartLoopDim::Integer,innerLoopDim::Integer,
-	numberRestartVals::Integer,dims::Integer,tol::Float64)::Float64
 
-	# Matrices memory initialization
-	trgBasis = Array{ComplexF64}(undef, dims, dims)
-	srcBasis = Array{ComplexF64}(undef, dims, dims)
-	kMat = zeros(ComplexF64, dims, dims)
-	# restart_srcBasis = Array{ComplexF64}(undef, numberRestartVals, numberRestartVals)
-	restart_srcBasis = Vector{ComplexF64}(undef, dims)
-	# Vectors memory initialization
-	resVec = Vector{ComplexF64}(undef, dims)
-	hRitzTrg = Vector{ComplexF64}(undef, dims)
-	hRitzSrc = Vector{ComplexF64}(undef, dims)
-	bCoeffs1 = Vector{ComplexF64}(undef, dims)
-	bCoeffs2 = Vector{ComplexF64}(undef, dims)
+function jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
+	P,alpha,trgBasis::Array{ComplexF64},srcBasis::Array{ComplexF64}, 
+	kMat::Array{ComplexF64}, vecDim::Integer, repDim::Integer, 
+	restartLoopDim::Integer,innerLoopDim::Integer,tol::Float64)::Float64
+	### memory initialization
+	resVec = Vector{ComplexF64}(undef, vecDim)
+	hRitzTrg = Vector{ComplexF64}(undef, vecDim)
+	hRitzSrc = Vector{ComplexF64}(undef, vecDim)
+	bCoeffs1 = Vector{ComplexF64}(undef, repDim)
+	bCoeffs2 = Vector{ComplexF64}(undef, repDim)
 	# set starting vector
 	rand!(view(srcBasis, :, 1)) # vk
 	# normalize starting vector
-	# nrm = BLAS.nrm2(vecDim, view(srcBasis,:,1), 1) # norm(vk)
-	nrm = BLAS.nrm2(dims, view(srcBasis,:,1), 1) # norm(vk)
+	nrm = BLAS.nrm2(vecDim, view(srcBasis,:,1), 1) # norm(vk)
 	srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
 	### algorithm initialization
 	# trgBasis[:, 1] = opt * srcBasis[:, 1] # Wk
 	trgBasis[:, 1] = A_v_product(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
 		P,alpha,srcBasis[:, 1])
 
-	nrm = BLAS.nrm2(dims, view(trgBasis,:,1), 1)
+	nrm = BLAS.nrm2(vecDim, view(trgBasis,:,1), 1)
 	trgBasis[:, 1] = trgBasis[:, 1] ./ nrm # Wk
 	srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
 	# representation of opt^{-1} in trgBasis
-	kMat[1,1] = BLAS.dotc(dims, view(trgBasis, :, 1), 1,
+	kMat[1,1] = BLAS.dotc(vecDim, view(trgBasis, :, 1), 1,
 		view(srcBasis, :, 1), 1) # Kk
 	# Ritz value
 	eigPos = 1
@@ -59,31 +49,28 @@ function jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
 		# Inner loop
 		if it > 1
 			# Before we restart, we will create a new version of everything 
-			resVec = Vector{ComplexF64}(undef, dims)
-			hRitzTrg = Vector{ComplexF64}(undef, dims)
-			hRitzSrc = Vector{ComplexF64}(undef, dims)
-			bCoeffs1 = Vector{ComplexF64}(undef, dims)
-			bCoeffs2 = Vector{ComplexF64}(undef, dims)
-			trgBasis = Array{ComplexF64}(undef, dims, dims) # dims[1],dims[2]
-			srcBasis = Array{ComplexF64}(undef, dims, dims) # dims[1],dims[2]
-			
+			resVec = Vector{ComplexF64}(undef, vecDim)
+			hRitzTrg = Vector{ComplexF64}(undef, vecDim)
+			hRitzSrc = Vector{ComplexF64}(undef, vecDim)
+			bCoeffs1 = Vector{ComplexF64}(undef, repDim)
+			bCoeffs2 = Vector{ComplexF64}(undef, repDim)
+			trgBasis = Array{ComplexF64}(undef, vecDim, vecDim) # dims[1],dims[2]
+			srcBasis = Array{ComplexF64}(undef, vecDim, vecDim) # dims[1],dims[2]
 			# rand!(view(srcBasis, :, 1)) # vk
-			srcBasis[:,numberRestartVals] = restart_srcBasis
-			# srcBasis[:,end]
-			
+			srcBasis[:,1] = srcBasis[:,end]
 			# normalize starting vector
-			nrm = BLAS.nrm2(dims, view(srcBasis,:,1), 1) # norm(vk)
+			nrm = BLAS.nrm2(vecDim, view(srcBasis,:,1), 1) # norm(vk)
 			srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
 			### algorithm initialization
 			# trgBasis[:, 1] = opt * srcBasis[:, 1] # Wk
 			trgBasis[:, 1] = A_v_product(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
 				P,alpha,srcBasis[:, 1])
 
-			nrm = BLAS.nrm2(dims, view(trgBasis,:,1), 1)
+			nrm = BLAS.nrm2(vecDim, view(trgBasis,:,1), 1)
 			trgBasis[:, 1] = trgBasis[:, 1] ./ nrm # Wk
 			srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
 			# representation of opt^{-1} in trgBasis
-			kMat[1,1] = BLAS.dotc(dims, view(trgBasis, :, 1), 1,
+			kMat[1,1] = BLAS.dotc(vecDim, view(trgBasis, :, 1), 1,
 				view(srcBasis, :, 1), 1) # Kk
 			# Ritz value
 			eigPos = 1
@@ -99,7 +86,7 @@ function jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
 		# for itr in 2 : Int(repDim/4) # Need to determine when this for loops stops 
 		for itr in 2 : innerLoopDim # Need to determine when this for loops stops
 			# depending on how much memory the laptop can take before crashing.
-			prjCoeff = BLAS.dotc(dims, hRitzTrg, 1, hRitzSrc, 1)
+			prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
 			# calculate Jacobi-Davidson direction
 			srcBasis[:, itr] = bad_bicgstab_matrix(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
 			 			P,alpha, theta, hRitzTrg, hRitzSrc, prjCoeff, resVec)
@@ -141,27 +128,16 @@ function jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
 			theta = 1/max_eigval
 	
 
-			# Update residual vector
+			# update residual vector
 			resVec = (theta * hRitzSrc) .- hRitzTrg
 	 
-			# Tolerance check here
+			# add tolerance check here
 			if norm(resVec) < tol
 				print("Converged off tolerance \n")
 				return real(theta) 
 				# println(real(theta))
 			end
-
-			# print("srcBasis ", srcBasis, "\n")
-
-			
 		end
-		# Didn't converge yet and finished inner loop, so save values wanted 
-		# for restart. The saved values will be the new initial values 
-		# for the next iteration of the inner loop.  
-		restart_srcBasis = srcBasis[:,innerLoopDim]
-		# restart_srcBasis = srcBasis[:,end-numberRestartVals:end]
-		# print("restart_srcBasis ", restart_srcBasis, "\n")
-
 		println("Finished inner loop \n")
 
 		# Once we have ran out of memory, we want to restart the inner loop 
@@ -171,7 +147,6 @@ function jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
 
 	end 
 	print("Didn't converge off tolerance. Atteined max set number of iterations \n")
-	print("real(theta) ", real(theta), "\n")
 	return real(theta)
 end
 

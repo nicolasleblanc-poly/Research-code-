@@ -1,5 +1,7 @@
 using LinearAlgebra, Random
-function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, tol::Float64)::Float64
+function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}, 
+	kMat::Array{ComplexF64}, opt::Array{ComplexF64}, vecDim::Integer, 
+	repDim::Integer, tol::Float64)::Float64
 	### memory initialization
 	resVec = Vector{ComplexF64}(undef, vecDim)
 	hRitzTrg = Vector{ComplexF64}(undef, vecDim)
@@ -58,11 +60,19 @@ function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}
 		end		
 		# update residual vector
 		resVec = (theta * hRitzSrc) .- hRitzTrg
-		# add tolerance check here
-		if mod(itr,32) == 0
-			
-			println(real(theta))
+
+		# Tolerance check here
+		if norm(resVec) < tol
+			print("Converged off tolerance \n")
+			return real(theta) 
+			# println(real(theta))
 		end
+
+		# # add tolerance check here
+		# if mod(itr,32) == 0
+			
+		# 	println(real(theta))
+		# end
 	end
 	return real(theta)
 end
@@ -194,11 +204,14 @@ opt[:,:] .= (opt .+ adjoint(opt)) ./ 2
 trueEigSys = eigen(opt)
 minEigPos = argmin(abs.(trueEigSys.values))
 minEig = trueEigSys.values[minEigPos]
-println("The smallest eigenvalue is ", minEig,".")
+println("The Julia smallest eigenvalue is ", minEig,".")
 dims = size(opt)
+# print("dims[1] ", dims[1], "\n")
+# print("dims[2] ", dims[2], "\n")
 bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
 bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
 trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
-val = jacDavRitzHarm(trgBasis, srcBasis, kMat, opt, dims[1], dims[2], 1.0e-6)
+# val = jacDavRitzHarm(trgBasis, srcBasis, kMat, opt, dims[1], dims[2], 1.0e-6)
+val = jacDavRitzHarm(trgBasis, srcBasis, kMat, opt, dims[1], 200, 1.0e-6)

@@ -69,7 +69,7 @@ chi_inv_coeff_dag = conj(chi_inv_coeff)
 
 # alpha is a parameter that we will play with to get a positive smallest 
 # eigenvalue of our system 
-alpha = 1e-6 
+alpha = 1e-12
 
 
 tol = 1e-3 # Loose tolerance 
@@ -77,19 +77,44 @@ tol = 1e-3 # Loose tolerance
 
 # (cellsA[1]*cellsA[2]*cellsA[3]*3,1)
 # dims = size(opt)
-trgBasis = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 
-	cellsA[1]*cellsA[2]*cellsA[3]*3)
-srcBasis = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 
-	cellsA[1]*cellsA[2]*cellsA[3]*3)
-kMat = zeros(ComplexF64, cellsA[1]*cellsA[2]*cellsA[3]*3, 
-	cellsA[1]*cellsA[2]*cellsA[3]*3)
-vecDim = cellsA[1]*cellsA[2]*cellsA[3]*3
-repDim = cellsA[1]*cellsA[2]*cellsA[3]*3
-restartDim = 2
-loopDim = 2
 
+restartLoopDim = 2
+innerLoopDim = 30
+numberRestartVals = 1
+dims = Int(cellsA[1]*cellsA[2]*cellsA[3]*3)
+
+# fct_call = jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
+# P,alpha,restartLoopDim,innerLoopDim,numberRestartVals,tol)
 
 fct_call = jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
-	P,alpha,trgBasis,srcBasis, kMat, vecDim, repDim, restartDim,loopDim,tol)
+P,alpha,restartLoopDim,innerLoopDim,numberRestartVals,dims,tol)
 
 print("The smallest eigenvalue is ", fct_call, "\n")
+
+
+# trgBasis = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 
+# 	cellsA[1]*cellsA[2]*cellsA[3]*3)
+# srcBasis = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 
+# 	cellsA[1]*cellsA[2]*cellsA[3]*3)
+# kMat = zeros(ComplexF64, cellsA[1]*cellsA[2]*cellsA[3]*3, 
+# 	cellsA[1]*cellsA[2]*cellsA[3]*3)
+
+# vecDim = cellsA[1]*cellsA[2]*cellsA[3]*3
+# repDim = cellsA[1]*cellsA[2]*cellsA[3]*3
+
+
+# trgBasis = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 
+# 	cellsA[1]*cellsA[2]*cellsA[3]*3)
+# srcBasis = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 
+# 	cellsA[1]*cellsA[2]*cellsA[3]*3)
+# kMat = zeros(ComplexF64, cellsA[1]*cellsA[2]*cellsA[3]*3, 
+# 	cellsA[1]*cellsA[2]*cellsA[3]*3)
+# vecDim = cellsA[1]*cellsA[2]*cellsA[3]*3
+# repDim = cellsA[1]*cellsA[2]*cellsA[3]*3
+
+
+
+# fct_call = jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
+# 	P,alpha,trgBasis,srcBasis, kMat, restartLoopDim,innerLoopDim,
+# 	numberRestartVals,tol)
+
