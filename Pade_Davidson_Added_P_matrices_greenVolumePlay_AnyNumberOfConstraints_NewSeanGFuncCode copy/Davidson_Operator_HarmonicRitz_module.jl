@@ -68,7 +68,8 @@ function jacDavRitzHarm_restart(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,
 			srcBasis = Array{ComplexF64}(undef, dims, dims) # dims[1],dims[2]
 			
 			# rand!(view(srcBasis, :, 1)) # vk
-			srcBasis[:,numberRestartVals] = restart_srcBasis
+			# srcBasis[:,numberRestartVals] = restart_srcBasis
+			srcBasis[:,1] = restart_srcBasis
 			# srcBasis[:,end]
 			
 			# normalize starting vector
