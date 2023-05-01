@@ -89,9 +89,16 @@ end
 function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, 
 	srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, 
 	opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, 
-	restartDim::Integer,innerLoopDim::Integer,tol::Float64)::Float64
+	restartDim::Integer,innerLoopDim::Integer,nb_rest_keep_vals::Integer,
+	tol::Float64)::Float64
 
-	restart_srcBasis = Vector{ComplexF64}(undef, vecDim)
+	restart_resVec = Vector{ComplexF64}(undef, vecDim)
+	restart_hRitzTrg = Vector{ComplexF64}(undef, vecDim)
+	restart_hRitzSrc = Vector{ComplexF64}(undef, vecDim)
+	restart_trgBasis = Array{ComplexF64}(undef, vecDim, vecDim)
+	restart_srcBasis = Array{ComplexF64}(undef, vecDim, vecDim)
+	restart_kMat = zeros(ComplexF64, vecDim, vecDim)
+	restart_theta = 0 
 
 	### memory initialization
 	resVec = Vector{ComplexF64}(undef, vecDim)
@@ -127,98 +134,199 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 	# Outer loop
 	for it in 1:restartDim # Need to think this over 
 		# Inner loop
+		print("it ", it, "\n")
 		if it > 1
 			# Before we restart, we will create a new version of everything 
-			resVec = Vector{ComplexF64}(undef, vecDim)
-			hRitzTrg = Vector{ComplexF64}(undef, vecDim)
-			hRitzSrc = Vector{ComplexF64}(undef, vecDim)
+			# Note: vecDim = dims[1] = dims[2] here. 
+			resVec = restart_resVec
+			
+			hRitzTrg = restart_hRitzTrg
+			
+			hRitzSrc = restart_hRitzSrc
+
 			bCoeffs1 = Vector{ComplexF64}(undef, repDim)
 			bCoeffs2 = Vector{ComplexF64}(undef, repDim)
-			trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
-			srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
-			# rand!(view(srcBasis, :, 1)) # vk
-			# srcBasis[:,1] = srcBasis[:,end]
-			# print("srcBasis[:,end] ", srcBasis[:,end],"\n")
-			srcBasis[:,1] = restart_srcBasis
-			# srcBasis[:,innerLoopDim]
+			
+			trgBasis = Array{ComplexF64}(undef, vecDim, vecDim)
+			trgBasis[:,innerLoopDim-nb_rest_keep_vals+1:innerLoopDim] = restart_trgBasis
+			
+			srcBasis = Array{ComplexF64}(undef, vecDim, vecDim)
+			srcBasis[:,1:nb_rest_keep_vals] = restart_srcBasis
 			print("restart_srcBasis ", restart_srcBasis,"\n")
 
-			# normalize starting vector
-			nrm = BLAS.nrm2(vecDim, view(srcBasis,:,1), 1) # norm(vk)
-			srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
-			### algorithm initialization
-			trgBasis[:, 1] = opt * srcBasis[:, 1] # Wk
-			nrm = BLAS.nrm2(vecDim, view(trgBasis,:,1), 1)
-			trgBasis[:, 1] = trgBasis[:, 1] ./ nrm # Wk
-			srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
-			# representation of opt^{-1} in trgBasis
-			kMat[1,1] = BLAS.dotc(vecDim, view(trgBasis, :, 1), 1,
-				view(srcBasis, :, 1), 1) # Kk
-			# Ritz value
-			eigPos = 1
-			theta = 1 / kMat[1,1] # eigenvalue 
-			# Ritz vectors
-			hRitzTrg[:] = trgBasis[:, 1] # hk = wk 
-			hRitzSrc[:] = srcBasis[:, 1] # fk = vk
-			# Negative residual vector
-			resVec = (theta .* hRitzSrc) .- hRitzTrg # theta_tilde*vk - wk
+			theta = restart_theta 
 
-		end
-		# innerLoopDim = Int(repDim/4)
-		for itr in 2 : innerLoopDim # Need to determine when this for loops stops 
-			# depending on how much memory the laptop can take before crashing.
-			prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
-			# calculate Jacobi-Davidson direction
-			srcBasis[:, itr] = bad_bicgstab_matrix(opt, theta, hRitzTrg,
-				hRitzSrc, prjCoeff, resVec)
-			trgBasis[:, itr] = opt * srcBasis[:, itr]
-			# orthogonalize
-			gramSchmidtHarm!(trgBasis, srcBasis, bCoeffs1, bCoeffs2, opt,
-				itr, tol)
-			# update inverse representation of opt^{-1} in trgBasis
-			kMat[1 : itr, itr] = BLAS.gemv('C', view(trgBasis, :, 1 : itr),
-				view(srcBasis, :, itr))
-			# assuming opt^{-1} Hermitian matrix
-			kMat[itr, 1 : (itr - 1)] = conj(kMat[1 : (itr-1), itr])
-			# eigenvalue decomposition, largest real eigenvalue last.
-			# should replace by BLAS operation
-			eigSys = eigen(view(kMat, 1 : itr, 1 : itr))
-	
-			global max_eigval = 0
-			position = 1
-			for i in eachindex(eigSys.values)
-				if max_eigval < real(eigSys.values[i]) 
-					theta_tilde = real(eigSys.values[i])
-					position = i 
-					global max_eigval = real(theta_tilde)
-					# print("position ", position, "\n")
-					# print("Updated position ", i, " times \n")
+			kMat = zeros(ComplexF64, vecDim, vecDim)
+			kMat[:,1:nb_rest_keep_vals] = restart_kMat 
+
+			# # normalize starting vector
+			# nrm = BLAS.nrm2(vecDim, view(srcBasis,:,1), 1) # norm(vk)
+			# srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
+			# ### algorithm initialization
+			# trgBasis[:, 1] = opt * srcBasis[:, 1] # Wk
+			# nrm = BLAS.nrm2(vecDim, view(trgBasis,:,1), 1)
+			# trgBasis[:, 1] = trgBasis[:, 1] ./ nrm # Wk
+			# srcBasis[:, 1] = srcBasis[:, 1] ./ nrm # Vk
+			# # representation of opt^{-1} in trgBasis
+			# kMat[1,1] = BLAS.dotc(vecDim, view(trgBasis, :, 1), 1,
+			# 	view(srcBasis, :, 1), 1) # Kk
+			# # Ritz value
+			# eigPos = 1
+			# theta = 1 / kMat[1,1] # eigenvalue 
+			# # Ritz vectors
+			# hRitzTrg[:] = trgBasis[:, 1] # hk = wk 
+			# hRitzSrc[:] = srcBasis[:, 1] # fk = vk
+			# # Negative residual vector
+			# resVec = (theta .* hRitzSrc) .- hRitzTrg # theta_tilde*vk - wk
+
+			# The key different with the for loop for it = 0 is that here we 
+			# are starting at nb_rest_keep_vals and not 2.
+			for itr in 1 : innerLoopDim # Need to determine when this for loops stops 
+				# depending on how much memory the laptop can take before crashing.
+				prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
+				# calculate Jacobi-Davidson direction
+				srcBasis[:, nb_rest_keep_vals+itr] = bad_bicgstab_matrix(opt, theta, hRitzTrg,
+					hRitzSrc, prjCoeff, resVec)
+				trgBasis[:, nb_rest_keep_vals+itr] = opt * srcBasis[:, nb_rest_keep_vals+itr]
+				# orthogonalize
+				gramSchmidtHarm!(trgBasis, srcBasis, bCoeffs1, bCoeffs2, opt,
+					nb_rest_keep_vals+itr, tol)
+
+				print("kMat 1 when it>2", kMat, "\n")	
+
+				# update inverse representation of opt^{-1} in trgBasis
+				kMat[1 : itr, itr] = BLAS.gemv('C', 
+				view(trgBasis, :, 1 : itr),
+					view(srcBasis, :, itr))
+				# assuming opt^{-1} Hermitian matrix
+				kMat[itr, 1 : (itr - 1)] = conj(kMat[1 : (itr-1), itr])
+				# eigenvalue decomposition, largest real eigenvalue last.
+				# should replace by BLAS operation
+
+				print("kMat 2 when it>2 ", kMat, "\n")
+
+				eigSys = eigen(view(kMat, 1 : itr, 1 : itr))
+		
+				global max_eigval = 0
+				position = 1
+				for i in eachindex(eigSys.values)
+					if max_eigval < real(eigSys.values[i]) 
+						theta_tilde = real(eigSys.values[i])
+						position = i 
+						global max_eigval = real(theta_tilde)
+						# print("position ", position, "\n")
+						# print("Updated position ", i, " times \n")
+					end 
+					# print("i ", i, "\n")
+					# print("min_eigval ", min_eigval, "\n")
 				end 
-				# print("i ", i, "\n")
-				# print("min_eigval ", min_eigval, "\n")
-			end 
-			theta = 1/max_eigval
+				theta = 1/max_eigval
+		
 	
-
-			# update residual vector
-			resVec = (theta * hRitzSrc) .- hRitzTrg
-	 
-			# add tolerance check here
-			if norm(resVec) < tol
-				print("Converged off tolerance \n")
-				return real(theta) 
-				# println(real(theta))
+				# update residual vector
+				resVec = (theta * hRitzSrc) .- hRitzTrg
+		 
+				# add tolerance check here
+				if norm(resVec) < tol
+					print("Converged off tolerance \n")
+					return real(theta) 
+					# println(real(theta))
+				end
+				print("norm(resVec) restart program ", norm(resVec),"\n")
 			end
-			print("norm(resVec) restart program ", norm(resVec),"\n")
+
+			restart_resVec = resVec
+			restart_hRitzTrg = trgBasis[:,innerLoopDim]
+			restart_hRitzSrc = srcBasis[:,innerLoopDim]
+			restart_trgBasis = trgBasis[:,innerLoopDim-nb_rest_keep_vals+1:innerLoopDim]
+			print("innerLoopDim-nb_rest_keep_vals ", innerLoopDim-nb_rest_keep_vals, "\n")
+			print("innerLoopDim ", innerLoopDim, "\n")
+			restart_srcBasis = srcBasis[:,innerLoopDim-nb_rest_keep_vals+1:innerLoopDim]
+			print("restart_srcBasis ", restart_srcBasis, "\n")
+			restart_kMat = kMat[:,innerLoopDim-nb_rest_keep_vals+1:innerLoopDim]
+			restart_theta = theta
+
+			println("Finished inner loop 2 \n")
+	
+			# Once we have ran out of memory, we want to restart the inner loop 
+			# but not with random starting vectors and matrices but with the ones
+			# from the last inner loop iteration that was done before running out 
+			# of memory. 
+
+		# Essentially if it == 0
+		else
+			for itr in 2 : innerLoopDim # Need to determine when this for loops stops 
+				# depending on how much memory the laptop can take before crashing.
+				prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
+				# calculate Jacobi-Davidson direction
+				srcBasis[:, itr] = bad_bicgstab_matrix(opt, theta, hRitzTrg,
+					hRitzSrc, prjCoeff, resVec)
+				trgBasis[:, itr] = opt * srcBasis[:, itr]
+				# orthogonalize
+				gramSchmidtHarm!(trgBasis, srcBasis, bCoeffs1, bCoeffs2, opt,
+					itr, tol)
+
+				print("kMat 1 when it=1 ", kMat, "\n")
+				# update inverse representation of opt^{-1} in trgBasis
+				kMat[1 : itr, itr] = BLAS.gemv('C', view(trgBasis, :, 1 : itr),
+					view(srcBasis, :, itr))
+				# assuming opt^{-1} Hermitian matrix
+				kMat[itr, 1 : (itr - 1)] = conj(kMat[1 : (itr-1), itr])
+				print("kMat 2 when it=1 ", kMat, "\n")
+
+				# eigenvalue decomposition, largest real eigenvalue last.
+				# should replace by BLAS operation
+				eigSys = eigen(view(kMat, 1 : itr, 1 : itr))
+		
+				global max_eigval = 0
+				position = 1
+				for i in eachindex(eigSys.values)
+					if max_eigval < real(eigSys.values[i]) 
+						theta_tilde = real(eigSys.values[i])
+						position = i 
+						global max_eigval = real(theta_tilde)
+						# print("position ", position, "\n")
+						# print("Updated position ", i, " times \n")
+					end 
+					# print("i ", i, "\n")
+					# print("min_eigval ", min_eigval, "\n")
+				end 
+				theta = 1/max_eigval
+		
+
+				# update residual vector
+				resVec = (theta * hRitzSrc) .- hRitzTrg
+		
+				# add tolerance check here
+				if norm(resVec) < tol
+					print("Converged off tolerance \n")
+					return real(theta) 
+					# println(real(theta))
+				end
+				# print("norm(resVec) restart program ", norm(resVec),"\n")
+			end
+			# print("full srcBasis ", srcBasis, "\n")
+
+
+			restart_resVec = resVec
+			restart_hRitzTrg = trgBasis[:,innerLoopDim]
+			restart_hRitzSrc = srcBasis[:,innerLoopDim]
+			restart_trgBasis = trgBasis[:,innerLoopDim-nb_rest_keep_vals+1:innerLoopDim]
+			print("innerLoopDim-nb_rest_keep_vals ", innerLoopDim-nb_rest_keep_vals, "\n")
+			print("innerLoopDim ", innerLoopDim, "\n")
+			restart_srcBasis = srcBasis[:,innerLoopDim-nb_rest_keep_vals+1:innerLoopDim]
+			print("restart_srcBasis ", restart_srcBasis, "\n")
+			restart_kMat = kMat[:,innerLoopDim-nb_rest_keep_vals+1:innerLoopDim]
+			restart_theta = theta
+
+			println("Finished inner loop 1 \n")
+
+			# Once we have ran out of memory, we want to restart the inner loop 
+			# but not with random starting vectors and matrices but with the ones
+			# from the last inner loop iteration that was done before running out 
+			# of memory. 
 		end
-		restart_srcBasis = srcBasis[:,innerLoopDim]
-		println("Finished inner loop \n")
-
-		# Once we have ran out of memory, we want to restart the inner loop 
-		# but not with random starting vectors and matrices but with the ones
-		# from the last inner loop iteration that was done before running out 
-		# of memory. 
-
+		
 	end 
 	print("Didn't converge off tolerance for restart program. 
 		Atteined max set number of iterations \n")
@@ -402,7 +510,7 @@ end
 # 	1.0 + im*0.0  -1.0 + im*0.0  4.0 + im*0.0]
 
 # For RND tests 
-sz = 20
+sz = 10
 opt = Array{ComplexF64}(undef,sz,sz)
 rand!(opt)
 
@@ -445,7 +553,9 @@ trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
 loopDim = 2
-eigval_basic = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],dims[2] , loopDim, 1.0e-4)
+# Function call for Harmonic Ritz algorithm without restart
+# eigval_basic = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],dims[2] , loopDim, 1.0e-4)
+
 # jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, 
 # 	srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, 
 # 	opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, 
@@ -457,10 +567,12 @@ bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
 trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
-innerLoopDim = 200
-restartDim = 20
+innerLoopDim = 4
+restartDim = 2
+nb_rest_keep_vals = 2
+# Function call for Harmonic Ritz algorithm with restart
 eigval_restart = jacDavRitzHarm_restart(trgBasis,srcBasis,kMat,opt,dims[1],
-	dims[2],innerLoopDim,restartDim,1.0e-4)
+	dims[2],restartDim,innerLoopDim,nb_rest_keep_vals,1.0e-4)
 # Int(dims[2]/2)
 print("No restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
 print("Restart - HarmonicRitz smallest positive eigenvalue is ", eigval_restart, "\n")
