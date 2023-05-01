@@ -172,21 +172,33 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 			# should replace by BLAS operation
 			eigSys = eigen(view(kMat, 1 : itr, 1 : itr))
 	
-			global max_eigval = 0
-			position = 1
-			for i in eachindex(eigSys.values)
-				if max_eigval < real(eigSys.values[i]) 
-					theta_tilde = real(eigSys.values[i])
-					position = i 
-					global max_eigval = real(theta_tilde)
-					# print("position ", position, "\n")
-					# print("Updated position ", i, " times \n")
-				end 
-				# print("i ", i, "\n")
-				# print("min_eigval ", min_eigval, "\n")
-			end 
-			theta = 1/max_eigval
+			# global max_eigval = 0
+			# position = 1
+			# for i in eachindex(eigSys.values)
+			# 	if max_eigval < real(eigSys.values[i]) 
+			# 		theta_tilde = real(eigSys.values[i])
+			# 		position = i 
+			# 		global max_eigval = real(theta_tilde)
+			# 		# print("position ", position, "\n")
+			# 		# print("Updated position ", i, " times \n")
+			# 	end 
+			# 	# print("i ", i, "\n")
+			# 	# print("min_eigval ", min_eigval, "\n")
+			# end 
+			# theta = 1/max_eigval
 	
+			# update Ritz vector
+			if abs.(eigSys.values[end]) > abs.(eigSys.values[1])
+			
+				theta = 1/eigSys.values[end]
+				hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, end])
+				hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, end])
+			else
+			
+				theta = 1/eigSys.values[1]
+				hRitzTrg[:] = trgBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
+				hRitzSrc[:] = srcBasis[:, 1 : itr] * (eigSys.vectors[:, 1])
+			end	
 
 			# update residual vector
 			resVec = (theta * hRitzSrc) .- hRitzTrg
@@ -267,60 +279,7 @@ function gramSchmidtHarm!(trgBasis::Array{T}, srcBasis::Array{T},
  			view(bCoeffs1, 1:(n-1)), 1.0 + im*0.0, view(srcBasis, :, n))
 	end
 end
-# # perform Gram-Schmidt on target basis, adjusting source basis accordingly
-# function gramSchmidtHarm!(trgBasis::Array{T}, srcBasis::Array{T},
-# 	bCoeffs1::Vector{T}, bCoeffs2::Vector{T}, opt::Array{T}, n::Integer,
-# 	tol::Float64) where T <: Number
-# 	# dimension of vector space
-# 	dim = size(trgBasis)[1]
-# 	# initialize projection norm
-# 	prjNrm = 1.0
-# 	# initialize projection coefficient memory
-# 	bCoeffs1[1:(n-1)] .= 0.0 + im*0.0
-# 	# check that basis does not exceed dimension
-# 	if n > dim
-# 		error("Requested basis size exceeds dimension of vector space.")
-# 	end
-# 	# norm of proposed vector
-# 	nrm = BLAS.nrm2(dim, view(trgBasis,:,n), 1)
-# 	# renormalize new vector
-# 	trgBasis[:,n] = trgBasis[:,n] ./ nrm
-# 	srcBasis[:,n] = srcBasis[:,n] ./ nrm
-# 	# guarded orthogonalization
-# 	while prjNrm > (tol * 100) && abs(nrm) > tol
-# 		### remove projection into existing basis
-#  		# calculate projection coefficients
-#  		BLAS.gemv!('C', 1.0 + im*0.0, view(trgBasis, :, 1:(n-1)),
-#  			view(trgBasis, :, n), 0.0 + im*0.0,
-#  			view(bCoeffs2, 1:(n -1)))
-#  		# remove projection coefficients
-#  		BLAS.gemv!('N', -1.0 + im*0.0, view(trgBasis, :, 1:(n-1)),
-#  			view(bCoeffs2, 1:(n -1)), 1.0 + im*0.0,
-#  			view(trgBasis, :, n))
-#  		# update total projection coefficients
-#  		bCoeffs1 .= bCoeffs2 .+ bCoeffs1
-#  		# calculate projection norm
-#  		prjNrm = BLAS.nrm2(n-1, bCoeffs2, 1)
-#  	end
-#  	# remaining norm after removing projections
-#  	nrm = BLAS.nrm2(dim, view(trgBasis,:,n), 1)
-# 	# check that remaining vector is sufficiently large
-# 	if abs(nrm) < tol
-# 		# switch to random search direction
-# 		rand!(view(srcBasis, :, n))
-# 		trgBasis[:, n] = opt * srcBasis[:, n]
-# 		gramSchmidtHarm!(trgBasis, srcBasis, bCoeffs1, bCoeffs2,
-# 			opt, n, tol)
-# 	else
-# 		# renormalize
-# 		trgBasis[:,n] = trgBasis[:,n] ./ nrm
-# 		srcBasis[:,n] = srcBasis[:,n] ./ nrm
-# 		bCoeffs1 .= bCoeffs1 ./ nrm
-# 		# remove projections from source vector
-# 		BLAS.gemv!('N', -1.0 + im*0.0, view(srcBasis, :, 1:(n-1)),
-#  			view(bCoeffs1, 1:(n-1)), 1.0 + im*0.0, view(srcBasis, :, n))
-# 	end
-# end
+
 # pseudo-projections for harmonic Ritz vector calculations
 @inline function harmVec(dim::Integer, pTrg::Vector{T}, pSrc::Vector{T},
 	prjCoeff::Number, sVec::Array{T})::Array{T} where T <: Number
@@ -412,18 +371,18 @@ val = jacDavRitzHarm(trgBasis, srcBasis, kMat, opt, dims[1], dims[2], 1.0e-6)
 # 	opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, 
 # 	loopDim::Integer,tol::Float64)::Float64
 
-# dims = size(opt)
-# bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
-# bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
-# trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
-# srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
-# kMat = zeros(ComplexF64, dims[2], dims[2])
+dims = size(opt)
+bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
+bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
+trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
+srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
+kMat = zeros(ComplexF64, dims[2], dims[2])
 
-# restartDim = 20
-# eigval_restart = jacDavRitzHarm_restart(trgBasis,srcBasis,kMat,opt,dims[1],
-# 	dims[2],innerLoopDim,restartDim,1.0e-4)
+restartDim = 50
+eigval_restart = jacDavRitzHarm_restart(trgBasis,srcBasis,kMat,opt,dims[1],
+	dims[2],innerLoopDim,restartDim,1.0e-4)
 print("No restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
-# print("Restart - HarmonicRitz smallest positive eigenvalue is ", eigval_restart, "\n")
+print("Restart - HarmonicRitz smallest positive eigenvalue is ", eigval_restart, "\n")
 println("Julia smallest positive eigenvalue is ", julia_min_eigval,"\n")
 
 
@@ -549,3 +508,59 @@ println("Julia smallest positive eigenvalue is ", julia_min_eigval,"\n")
 # minEigPos = argmin(abs.(trueEigSys.values))
 # minEig = trueEigSys.values[minEigPos]
 # println("Julia smallest positive eigenvalue is ", minEig,".")
+
+
+# # perform Gram-Schmidt on target basis, adjusting source basis accordingly
+# function gramSchmidtHarm!(trgBasis::Array{T}, srcBasis::Array{T},
+# 	bCoeffs1::Vector{T}, bCoeffs2::Vector{T}, opt::Array{T}, n::Integer,
+# 	tol::Float64) where T <: Number
+# 	# dimension of vector space
+# 	dim = size(trgBasis)[1]
+# 	# initialize projection norm
+# 	prjNrm = 1.0
+# 	# initialize projection coefficient memory
+# 	bCoeffs1[1:(n-1)] .= 0.0 + im*0.0
+# 	# check that basis does not exceed dimension
+# 	if n > dim
+# 		error("Requested basis size exceeds dimension of vector space.")
+# 	end
+# 	# norm of proposed vector
+# 	nrm = BLAS.nrm2(dim, view(trgBasis,:,n), 1)
+# 	# renormalize new vector
+# 	trgBasis[:,n] = trgBasis[:,n] ./ nrm
+# 	srcBasis[:,n] = srcBasis[:,n] ./ nrm
+# 	# guarded orthogonalization
+# 	while prjNrm > (tol * 100) && abs(nrm) > tol
+# 		### remove projection into existing basis
+#  		# calculate projection coefficients
+#  		BLAS.gemv!('C', 1.0 + im*0.0, view(trgBasis, :, 1:(n-1)),
+#  			view(trgBasis, :, n), 0.0 + im*0.0,
+#  			view(bCoeffs2, 1:(n -1)))
+#  		# remove projection coefficients
+#  		BLAS.gemv!('N', -1.0 + im*0.0, view(trgBasis, :, 1:(n-1)),
+#  			view(bCoeffs2, 1:(n -1)), 1.0 + im*0.0,
+#  			view(trgBasis, :, n))
+#  		# update total projection coefficients
+#  		bCoeffs1 .= bCoeffs2 .+ bCoeffs1
+#  		# calculate projection norm
+#  		prjNrm = BLAS.nrm2(n-1, bCoeffs2, 1)
+#  	end
+#  	# remaining norm after removing projections
+#  	nrm = BLAS.nrm2(dim, view(trgBasis,:,n), 1)
+# 	# check that remaining vector is sufficiently large
+# 	if abs(nrm) < tol
+# 		# switch to random search direction
+# 		rand!(view(srcBasis, :, n))
+# 		trgBasis[:, n] = opt * srcBasis[:, n]
+# 		gramSchmidtHarm!(trgBasis, srcBasis, bCoeffs1, bCoeffs2,
+# 			opt, n, tol)
+# 	else
+# 		# renormalize
+# 		trgBasis[:,n] = trgBasis[:,n] ./ nrm
+# 		srcBasis[:,n] = srcBasis[:,n] ./ nrm
+# 		bCoeffs1 .= bCoeffs1 ./ nrm
+# 		# remove projections from source vector
+# 		BLAS.gemv!('N', -1.0 + im*0.0, view(srcBasis, :, 1:(n-1)),
+#  			view(bCoeffs1, 1:(n-1)), 1.0 + im*0.0, view(srcBasis, :, n))
+# 	end
+# end
