@@ -157,7 +157,7 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 			theta = restart_theta 
 
 			kMat = zeros(ComplexF64, vecDim, vecDim)
-			kMat[:,1:nb_rest_keep_vals] = restart_kMat 
+			kMat[1:nb_rest_keep_vals,1:nb_rest_keep_vals] = restart_kMat 
 
 			# # normalize starting vector
 			# nrm = BLAS.nrm2(vecDim, view(srcBasis,:,1), 1) # norm(vk)
@@ -234,7 +234,7 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 				end
 				print("norm(resVec) restart program ", norm(resVec),"\n")
 			end
-
+			print(itr)
 			restart_resVec = resVec
 			restart_hRitzTrg = trgBasis[:,innerLoopDim]
 			restart_hRitzSrc = srcBasis[:,innerLoopDim]
@@ -243,7 +243,9 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 			print("innerLoopDim ", innerLoopDim, "\n")
 			restart_srcBasis = srcBasis[:,innerLoopDim-nb_rest_keep_vals+1:innerLoopDim]
 			print("restart_srcBasis ", restart_srcBasis, "\n")
-			restart_kMat = kMat[:,innerLoopDim-nb_rest_keep_vals+1:innerLoopDim]
+			# restart_kMat = kMat[:,innerLoopDim-nb_rest_keep_vals+1:innerLoopDim]
+			restart_kMat = kMat[1:innerLoopDim-nb_rest_keep_vals,1:innerLoopDim-nb_rest_keep_vals]
+			print("restart_kMat for it>2 ", restart_kMat, "\n")
 			restart_theta = theta
 
 			println("Finished inner loop 2 \n")
@@ -303,7 +305,7 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 					return real(theta) 
 					# println(real(theta))
 				end
-				# print("norm(resVec) restart program ", norm(resVec),"\n")
+				print("norm(resVec) restart program ", norm(resVec),"\n")
 			end
 			# print("full srcBasis ", srcBasis, "\n")
 
@@ -316,7 +318,9 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 			print("innerLoopDim ", innerLoopDim, "\n")
 			restart_srcBasis = srcBasis[:,innerLoopDim-nb_rest_keep_vals+1:innerLoopDim]
 			print("restart_srcBasis ", restart_srcBasis, "\n")
-			restart_kMat = kMat[:,innerLoopDim-nb_rest_keep_vals+1:innerLoopDim]
+			# restart_kMat = kMat[:,innerLoopDim-nb_rest_keep_vals+1:innerLoopDim]
+			restart_kMat = kMat[1:innerLoopDim-nb_rest_keep_vals,1:innerLoopDim-nb_rest_keep_vals]
+			print("restart_kMat for it = 1 ", restart_kMat, "\n")
 			restart_theta = theta
 
 			println("Finished inner loop 1 \n")
