@@ -153,7 +153,9 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 			theta = restart_theta
 
 			kMat = zeros(ComplexF64, vecDim, vecDim)
-			kMat[1:restartDim,1:restartDim] = restart_kMat 
+			# kMat[1:restartDim,1:restartDim] = restart_kMat 
+			kMat[:,1:restartDim] = restart_kMat
+
 			# print("kMat[1:restartDim,1:restartDim] ",
 			# kMat[1:restartDim,1:restartDim], "\n")
 
@@ -263,8 +265,9 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 		restart_hRitzTrg = trgBasis[:,innerLoopDim]
 		restart_hRitzSrc = srcBasis[:,innerLoopDim]
 		restart_trgBasis = trgBasis[:,innerLoopDim-restartDim+1:innerLoopDim]
-		restart_kMat = kMat[innerLoopDim-restartDim+1:innerLoopDim
-				,innerLoopDim-restartDim+1:innerLoopDim]
+		# restart_kMat = kMat[innerLoopDim-restartDim+1:innerLoopDim
+		# 		,innerLoopDim-restartDim+1:innerLoopDim]
+		restart_kMat = kMat[:,innerLoopDim-restartDim+1:innerLoopDim]
 		print("restart_kMat ", restart_kMat, "\n")
 
 		# Once we have ran out of memory, we want to restart the inner loop 
