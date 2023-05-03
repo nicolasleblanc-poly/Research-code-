@@ -271,60 +271,7 @@ function gramSchmidtHarm!(trgBasis::Array{T}, srcBasis::Array{T},
  			view(bCoeffs1, 1:(n-1)), 1.0 + im*0.0, view(srcBasis, :, n))
 	end
 end
-# # perform Gram-Schmidt on target basis, adjusting source basis accordingly
-# function gramSchmidtHarm!(trgBasis::Array{T}, srcBasis::Array{T},
-# 	bCoeffs1::Vector{T}, bCoeffs2::Vector{T}, opt::Array{T}, n::Integer,
-# 	tol::Float64) where T <: Number
-# 	# dimension of vector space
-# 	dim = size(trgBasis)[1]
-# 	# initialize projection norm
-# 	prjNrm = 1.0
-# 	# initialize projection coefficient memory
-# 	bCoeffs1[1:(n-1)] .= 0.0 + im*0.0
-# 	# check that basis does not exceed dimension
-# 	if n > dim
-# 		error("Requested basis size exceeds dimension of vector space.")
-# 	end
-# 	# norm of proposed vector
-# 	nrm = BLAS.nrm2(dim, view(trgBasis,:,n), 1)
-# 	# renormalize new vector
-# 	trgBasis[:,n] = trgBasis[:,n] ./ nrm
-# 	srcBasis[:,n] = srcBasis[:,n] ./ nrm
-# 	# guarded orthogonalization
-# 	while prjNrm > (tol * 100) && abs(nrm) > tol
-# 		### remove projection into existing basis
-#  		# calculate projection coefficients
-#  		BLAS.gemv!('C', 1.0 + im*0.0, view(trgBasis, :, 1:(n-1)),
-#  			view(trgBasis, :, n), 0.0 + im*0.0,
-#  			view(bCoeffs2, 1:(n -1)))
-#  		# remove projection coefficients
-#  		BLAS.gemv!('N', -1.0 + im*0.0, view(trgBasis, :, 1:(n-1)),
-#  			view(bCoeffs2, 1:(n -1)), 1.0 + im*0.0,
-#  			view(trgBasis, :, n))
-#  		# update total projection coefficients
-#  		bCoeffs1 .= bCoeffs2 .+ bCoeffs1
-#  		# calculate projection norm
-#  		prjNrm = BLAS.nrm2(n-1, bCoeffs2, 1)
-#  	end
-#  	# remaining norm after removing projections
-#  	nrm = BLAS.nrm2(dim, view(trgBasis,:,n), 1)
-# 	# check that remaining vector is sufficiently large
-# 	if abs(nrm) < tol
-# 		# switch to random search direction
-# 		rand!(view(srcBasis, :, n))
-# 		trgBasis[:, n] = opt * srcBasis[:, n]
-# 		gramSchmidtHarm!(trgBasis, srcBasis, bCoeffs1, bCoeffs2,
-# 			opt, n, tol)
-# 	else
-# 		# renormalize
-# 		trgBasis[:,n] = trgBasis[:,n] ./ nrm
-# 		srcBasis[:,n] = srcBasis[:,n] ./ nrm
-# 		bCoeffs1 .= bCoeffs1 ./ nrm
-# 		# remove projections from source vector
-# 		BLAS.gemv!('N', -1.0 + im*0.0, view(srcBasis, :, 1:(n-1)),
-#  			view(bCoeffs1, 1:(n-1)), 1.0 + im*0.0, view(srcBasis, :, n))
-# 	end
-# end
+
 # pseudo-projections for harmonic Ritz vector calculations
 @inline function harmVec(dim::Integer, pTrg::Vector{T}, pSrc::Vector{T},
 	prjCoeff::Number, sVec::Array{T})::Array{T} where T <: Number
@@ -438,8 +385,10 @@ srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
 loopDim = 2
 
-innerLoopDim = 200
+innerLoopDim = 175
 restartDim = 20
+# innerLoopDim = 200
+# restartDim = 20
 
 eigval_basic = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],
 	dims[2] , innerLoopDim, 1.0e-4)

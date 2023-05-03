@@ -1,6 +1,8 @@
 using LinearAlgebra, Random
 
-function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, tol::Float64)::Float64
+function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}, 
+	kMat::Array{ComplexF64}, opt::Array{ComplexF64}, vecDim::Integer, 
+	repDim::Integer, innerLoopDim::Integer, tol::Float64)::Float64
 	### memory initialization
 	resVec = Vector{ComplexF64}(undef, vecDim)
 	hRitzTrg = Vector{ComplexF64}(undef, vecDim)
@@ -28,7 +30,7 @@ function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}
 	hRitzSrc[:] = srcBasis[:, 1]
 	# Negative residual vector
 	resVec = (theta .* hRitzSrc) .- hRitzTrg
-	for itr in 2 : repDim
+	for itr in 2 : innerLoopDim
 		prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
 		# calculate Jacobi-Davidson direction
 		srcBasis[:, itr] = bad_bicgstab_matrix(opt, theta, hRitzTrg,
@@ -63,7 +65,7 @@ function jacDavRitzHarm(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}
 
 		# add tolerance check here
         if norm(resVec) < tol
-			print("Converged off tolerance \n")
+			print("Converged off tolerance for basic program \n")
 			return real(theta) 
 			# println(real(theta))
 		end
@@ -129,7 +131,7 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 			# print("srcBasis[:,end] ", srcBasis[:,end],"\n")
 			srcBasis[:,1] = restart_srcBasis
 			# srcBasis[:,innerLoopDim]
-			print("restart_srcBasis ", restart_srcBasis,"\n")
+			# print("restart_srcBasis ", restart_srcBasis,"\n")
 
 			# normalize starting vector
 			nrm = BLAS.nrm2(vecDim, view(srcBasis,:,1), 1) # norm(vk)
@@ -153,6 +155,7 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 
 		end
 		# innerLoopDim = Int(repDim/4)
+		
 		for itr in 2 : innerLoopDim # Need to determine when this for loops stops 
 			# depending on how much memory the laptop can take before crashing.
 			prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
@@ -205,7 +208,7 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 	 
 			# add tolerance check here
 			if norm(resVec) < tol
-				print("Converged off tolerance \n")
+				print("Converged off tolerance for restart program \n")
 				return real(theta) 
 				# println(real(theta))
 			end
@@ -355,7 +358,7 @@ rand!(opt)
 opt[:,:] .= (opt .+ adjoint(opt)) ./ 2
 trueEigSys = eigen(opt)
 minEigPos = argmin(abs.(trueEigSys.values))
-minEig = trueEigSys.values[minEigPos]
+julia_min_eigval = trueEigSys.values[minEigPos]
 println("The smallest eigenvalue is ", minEig,".")
 dims = size(opt)
 bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
@@ -363,7 +366,12 @@ bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
 trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
-val = jacDavRitzHarm(trgBasis, srcBasis, kMat, opt, dims[1], dims[2], 1.0e-6)
+
+innerLoopDim = 200
+restartDim = 50
+
+eigval_basic = jacDavRitzHarm(trgBasis, srcBasis, kMat, opt, dims[1], dims[2], 
+	innerLoopDim, 1.0e-6)
 
 
 # jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, 
@@ -378,7 +386,6 @@ trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
 
-restartDim = 50
 eigval_restart = jacDavRitzHarm_restart(trgBasis,srcBasis,kMat,opt,dims[1],
 	dims[2],innerLoopDim,restartDim,1.0e-4)
 print("No restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
