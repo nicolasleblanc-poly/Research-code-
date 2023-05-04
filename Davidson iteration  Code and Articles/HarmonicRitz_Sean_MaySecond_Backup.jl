@@ -351,27 +351,29 @@ rand!(opt)
 # 	0.0 + im*0.0  -1.0 + im*0.0  4.0 + im*0.0]
 opt[:,:] .= (opt .+ adjoint(opt)) ./ 2
 trueEigSys = eigen(opt)
-julia_eigvals = trueEigSys.values 
+minEigPos = argmin(abs.(trueEigSys.values))
+julia_min_eigval = trueEigSys.values[minEigPos]
+
 # print("julia_eigvals ", julia_eigvals,"\n")
 # Nic
 # print("trueEigSys ", trueEigSys, "\n")
 # Let's find the smallest positive eigenvalue found using the Julia solver
-global julia_min_eigval = 1000
-global position = 1
-for i in eachindex(julia_eigvals)
-	# print("real(julia_eigvals[i]) ", real(julia_eigvals[i]), "\n")
-	# print("min_eigval ", min_eigval, "\n")
-	if 0 < real(julia_eigvals[i]) < julia_min_eigval
-		theta_tilde = real(julia_eigvals[i])
-		global position = i 
-		global julia_min_eigval = real(theta_tilde)
-		# print("julia_min_eigval ", julia_min_eigval, "\n")
-		# print("position ", position, "\n")
-		# print("Updated position ", i, " times \n")
-	end 
-	# print("i ", i, "\n")
-	# print("min_eigval ", min_eigval, "\n")
-end  
+# global julia_min_eigval = 1000
+# global position = 1
+# for i in eachindex(julia_eigvals)
+# 	# print("real(julia_eigvals[i]) ", real(julia_eigvals[i]), "\n")
+# 	# print("min_eigval ", min_eigval, "\n")
+# 	if 0 < real(julia_eigvals[i]) < julia_min_eigval
+# 		theta_tilde = real(julia_eigvals[i])
+# 		global position = i 
+# 		global julia_min_eigval = real(theta_tilde)
+# 		# print("julia_min_eigval ", julia_min_eigval, "\n")
+# 		# print("position ", position, "\n")
+# 		# print("Updated position ", i, " times \n")
+# 	end 
+# 	# print("i ", i, "\n")
+# 	# print("min_eigval ", min_eigval, "\n")
+# end  
 # Sean 
 # This gives the smalles eigenvalue and not the smallest positive eigenvalue 
 # minEigPos = argmin(abs.(trueEigSys.values))

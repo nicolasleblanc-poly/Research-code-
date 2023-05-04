@@ -156,8 +156,8 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 			# kMat[1:restartDim,1:restartDim] = restart_kMat 
 			kMat[:,1:restartDim] = restart_kMat
 
-			# print("kMat[1:restartDim,1:restartDim] ",
-			# kMat[1:restartDim,1:restartDim], "\n")
+			print("kMat[1:restartDim,1:restartDim] ",
+			kMat[:,1:restartDim], "\n")
 
 
 			# innerLoopDim = Int(repDim/4)
@@ -406,6 +406,7 @@ end
 
 # For RND tests 
 sz = 256
+# sz = 50
 opt = Array{ComplexF64}(undef,sz,sz)
 rand!(opt)
 
@@ -415,32 +416,9 @@ rand!(opt)
 # 	0.0 + im*0.0  -1.0 + im*0.0  4.0 + im*0.0]
 opt[:,:] .= (opt .+ adjoint(opt)) ./ 2
 trueEigSys = eigen(opt)
-julia_eigvals = trueEigSys.values 
-# print("julia_eigvals ", julia_eigvals,"\n")
-# Nic
-# print("trueEigSys ", trueEigSys, "\n")
-# Let's find the smallest positive eigenvalue found using the Julia solver
-global julia_min_eigval = 1000
-global position = 1
-for i in eachindex(julia_eigvals)
-	# print("real(julia_eigvals[i]) ", real(julia_eigvals[i]), "\n")
-	# print("min_eigval ", min_eigval, "\n")
-	if 0 < real(julia_eigvals[i]) < julia_min_eigval
-		theta_tilde = real(julia_eigvals[i])
-		global position = i 
-		global julia_min_eigval = real(theta_tilde)
-		# print("julia_min_eigval ", julia_min_eigval, "\n")
-		# print("position ", position, "\n")
-		# print("Updated position ", i, " times \n")
-	end 
-	# print("i ", i, "\n")
-	# print("min_eigval ", min_eigval, "\n")
-end  
-# Sean 
-# This gives the smalles eigenvalue and not the smallest positive eigenvalue 
-# minEigPos = argmin(abs.(trueEigSys.values))
-# minEig = trueEigSys.values[minEigPos]
-# println("Julia smallest positive eigenvalue is ", minEig,".")
+minEigPos = argmin(abs.(trueEigSys.values))
+julia_min_eigval = trueEigSys.values[minEigPos]
+
 dims = size(opt)
 print("dims ", dims, "\n")
 
@@ -451,10 +429,10 @@ srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
 loopDim = 2
 
-innerLoopDim = 175
-restartDim = 15
-# innerLoopDim = 200
-# restartDim = 20
+# innerLoopDim = 175
+# restartDim = 15
+innerLoopDim = 50
+restartDim = 20
 
 eigval_basic = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],
 	dims[2] , innerLoopDim, 1.0e-6)
@@ -472,7 +450,7 @@ kMat = zeros(ComplexF64, dims[2], dims[2])
 
 eigval_restart = jacDavRitzHarm_restart(trgBasis,srcBasis,kMat,opt,dims[1],
 	dims[2],innerLoopDim,restartDim,1.0e-6)
-# Int(dims[2]/2)
+
 print("No restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
 print("Restart - HarmonicRitz smallest positive eigenvalue is ", eigval_restart, "\n")
 println("Julia smallest positive eigenvalue is ", julia_min_eigval,"\n")
