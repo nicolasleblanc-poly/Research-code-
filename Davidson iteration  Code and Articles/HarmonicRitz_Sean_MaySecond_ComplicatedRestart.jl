@@ -159,8 +159,6 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 			print("kMat[1:restartDim,1:restartDim] ",
 			kMat[:,1:restartDim], "\n")
 
-
-			# innerLoopDim = Int(repDim/4)
 			for itr in restartDim : innerLoopDim-restartDim # Need to determine when this for loops stops 
 				# depending on how much memory the laptop can take before crashing.
 				prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
