@@ -359,7 +359,7 @@ opt[:,:] .= (opt .+ adjoint(opt)) ./ 2
 trueEigSys = eigen(opt)
 minEigPos = argmin(abs.(trueEigSys.values))
 julia_min_eigval = trueEigSys.values[minEigPos]
-println("The smallest eigenvalue is ", minEig,".")
+println("The smallest eigenvalue is ", julia_min_eigval,".")
 dims = size(opt)
 bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
 bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
@@ -371,7 +371,7 @@ innerLoopDim = 200
 restartDim = 50
 
 eigval_basic = jacDavRitzHarm(trgBasis, srcBasis, kMat, opt, dims[1], dims[2], 
-	innerLoopDim, 1.0e-6)
+	innerLoopDim, 1.0e-3)
 
 
 # jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, 

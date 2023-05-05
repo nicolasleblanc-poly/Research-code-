@@ -437,7 +437,7 @@ eigval_restart_vals = Vector{ComplexF64}(undef, length(restartDim_vals))
 dims = size(opt)
 # innerLoopDim = 175
 # restartDim = 15
-innerLoopDim = 250
+innerLoopDim = 200
 restartDim = 100
 bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
 bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
@@ -477,3 +477,4 @@ println("Number of iterations to conv for restart program ", nb_it_vals_restart,
 plot!(restartDim_vals,nb_it_vals_restart)
 xlabel!("Restart size")
 ylabel!("Number of iterations")
+savefig("Nb_it_vs_restart_size.png")
