@@ -30,8 +30,9 @@ function jacDavRitzHarm_basic(trgBasis::Array{ComplexF64},
 	# Negative residual vector
 	resVec = (theta .* hRitzSrc) .- hRitzTrg # theta_tilde*vk - wk
 
+	
 	# Code for if we just want the inner loop, so with no restart  
-	for itr in 2 : innerLoopDim # Need to determine when this for loops stops 
+	for itr in 2 : innerLoopDim  # Need to determine when this for loops stops 
 		# depending on how much memory the laptop can take before crashing.
 		prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
 		# calculate Jacobi-Davidson direction
