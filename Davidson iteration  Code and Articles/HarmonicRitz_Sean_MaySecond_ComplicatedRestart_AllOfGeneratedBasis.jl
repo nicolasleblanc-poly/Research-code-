@@ -1,5 +1,7 @@
 using LinearAlgebra, Random
-function jacDavRitzHarm_basic(trgBasis::Array{ComplexF64}, srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, loopDim::Integer,tol::Float64)::Float64
+function jacDavRitzHarm_basic(trgBasis::Array{ComplexF64}, 
+	srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, opt::Array{ComplexF64}, 
+	vecDim::Integer, repDim::Integer, innerLoopDim::Integer,tol::Float64)::Float64
 	### memory initialization
 	resVec = Vector{ComplexF64}(undef, vecDim)
 	hRitzTrg = Vector{ComplexF64}(undef, vecDim)
@@ -29,7 +31,7 @@ function jacDavRitzHarm_basic(trgBasis::Array{ComplexF64}, srcBasis::Array{Compl
 	resVec = (theta .* hRitzSrc) .- hRitzTrg # theta_tilde*vk - wk
 
 	# Code for if we just want the inner loop, so with no restart  
-	for itr in 2 : repDim # Need to determine when this for loops stops 
+	for itr in 2 : innerLoopDim # Need to determine when this for loops stops 
 		# depending on how much memory the laptop can take before crashing.
 		prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
 		# calculate Jacobi-Davidson direction
