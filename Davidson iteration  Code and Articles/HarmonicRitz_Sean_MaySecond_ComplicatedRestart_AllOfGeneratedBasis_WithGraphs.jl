@@ -1,7 +1,7 @@
-using LinearAlgebra, Random, Plots
+using LinearAlgebra, Random, Plots, Base.Threads
 function jacDavRitzHarm_basic(trgBasis::Array{ComplexF64}, 
 	srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, opt::Array{ComplexF64}, 
-	vecDim::Integer, repDim::Integer, innerLoopDim::Integer,tol::Float64)#::Float64
+	vecDim::Integer, repDim::Integer, innerLoopDim::Integer,tol::Float64)::Tuple{Float64, Int32}
 	### memory initialization
 	resVec = Vector{ComplexF64}(undef, vecDim)
 	hRitzTrg = Vector{ComplexF64}(undef, vecDim)
@@ -9,7 +9,7 @@ function jacDavRitzHarm_basic(trgBasis::Array{ComplexF64},
 	bCoeffs1 = Vector{ComplexF64}(undef, repDim)
 	bCoeffs2 = Vector{ComplexF64}(undef, repDim)
 
-	nb_it_vals_basic = 0.0
+	nb_it_vals_basic = 0
 
 	# set starting vector
 	rand!(view(srcBasis, :, 1)) # vk
@@ -73,27 +73,27 @@ function jacDavRitzHarm_basic(trgBasis::Array{ComplexF64},
 		# add tolerance check here
 		if norm(resVec) < tol
 			print("Converged off tolerance \n")
-			print("real(theta) ", real(theta), "\n")
-			print("nb_it_vals_basic ", nb_it_vals_basic, "\n")
-			vals = real(theta), nb_it_vals_basic
+			# print("real(theta) ", real(theta), "\n")
+			# print("nb_it_vals_basic ", nb_it_vals_basic, "\n")
+			vals = real(theta), real(nb_it_vals_basic)
 			return vals
 			# println(real(theta))
 		end
-		print("norm(resVec) basic program ", norm(resVec),"\n")
+		# print("norm(resVec) basic program ", norm(resVec),"\n")
 
 		nb_it_vals_basic += 1
 	end
  
 	print("Didn't converge off tolerance for basic program. 
 		Atteined max set number of iterations \n")
-	return real(theta), nb_it_vals_basic
+	return real(theta), real(nb_it_vals_basic)
 end
 
 
 function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, 
 	srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, 
 	opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, 
-	innerLoopDim::Integer,restartDim::Integer,tol::Float64)::Float64
+	innerLoopDim::Integer,restartDim::Integer,tol::Float64)::Tuple{Float64, Int32}
 
 	# print("vecDim ", vecDim, "\n")
 
@@ -206,10 +206,10 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 				# add tolerance check here
 				if norm(resVec) < tol
 					print("Converged off tolerance \n")
-					return real(theta), nb_it_vals_restart
+					return real(theta), real(nb_it_vals_restart)
 					# println(real(theta))
 				end
-				print("norm(resVec) restart program ", norm(resVec),"\n")
+				# print("norm(resVec) restart program ", norm(resVec),"\n")
 			end
 		
 		# Essentially for the case when it = 0
@@ -256,7 +256,7 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 					return real(theta), nb_it_vals_restart
 					# println(real(theta))
 				end
-				print("norm(resVec) restart program ", norm(resVec),"\n")
+				# print("norm(resVec) restart program ", norm(resVec),"\n")
 			end
 		end 
 
@@ -264,7 +264,7 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 		# print("innerLoopDim ", innerLoopDim, "\n")
 		# print("restartDim ", restartDim, "\n")
 		restart_srcBasis = srcBasis[:,1:innerLoopDim]
-		println("Finished inner loop \n")
+		# println("Finished inner loop \n")
 
 		restart_resVec = resVec
 		restart_hRitzTrg = trgBasis[:,innerLoopDim]
@@ -281,11 +281,12 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 		# of memory. 
 
 		nb_it_vals_restart += 1
+		# print("nb_it_vals_restart ", nb_it_vals_restart, "\n")
 
 	end 
 	print("Didn't converge off tolerance for restart program. 
 		Atteined max set number of iterations \n")
-	return real(theta), nb_it_vals_restart
+	return real(theta), real(nb_it_vals_restart)
 end
 
 # perform Gram-Schmidt on target basis, adjusting source basis accordingly
@@ -426,9 +427,9 @@ trueEigSys = eigen(opt)
 minEigPos = argmin(abs.(trueEigSys.values))
 julia_min_eigval = trueEigSys.values[minEigPos]
 
-restartDim_vals = [0,100]
-nb_it_vals_basic = Vector{ComplexF64}(undef, length(restartDim_vals))
-nb_it_vals_restart = Vector{ComplexF64}(undef, length(restartDim_vals))
+restartDim_vals = [0,5,10,15,20,100,150,200]
+nb_it_vals_basic = Vector{Int32}(undef, length(restartDim_vals))
+nb_it_vals_restart = Vector{Int32}(undef, length(restartDim_vals))
 eigval_julia_vals = Vector{ComplexF64}(undef, length(restartDim_vals))
 eigval_basic_vals = Vector{ComplexF64}(undef, length(restartDim_vals))
 eigval_restart_vals = Vector{ComplexF64}(undef, length(restartDim_vals))
@@ -446,32 +447,33 @@ kMat = zeros(ComplexF64, dims[2], dims[2])
 # print("eigval_basic_vals[index], nb_it_vals_basic[index] = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],
 # 	dims[2] , innerLoopDim, 1.0e-6) ", jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],
 # 	dims[2] , innerLoopDim, 1.0e-6), "\n")
-jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],
-dims[2] , innerLoopDim, 1.0e-6)
+eigval_basic, nb_it_vals_basic = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, 
+	opt, dims[1], dims[2] , innerLoopDim, 1.0e-6)
 
 
-# for index = 1:length(restartDim_vals)
-# 	bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
-# 	bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
-# 	trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
-# 	srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
-# 	kMat = zeros(ComplexF64, dims[2], dims[2])
+# for index in eachindex(length(restartDim_vals))
+@threads for index = 1:length(restartDim_vals)
+	print("index ", index, "\n")
+	bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
+	bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
+	trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
+	srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
+	kMat = zeros(ComplexF64, dims[2], dims[2])
+	eigval_restart_vals[index], nb_it_vals_restart[index] = jacDavRitzHarm_restart(trgBasis,srcBasis,kMat,opt,dims[1],
+		dims[2],innerLoopDim,restartDim_vals[index],1.0e-6)
+	print("eigval_restart_vals[index] ", eigval_restart_vals[index], "\n")
+	print("nb_it_vals_restart[index] ", nb_it_vals_restart[index], "\n")
+end 
 
-	
+print("restartDim_vals ", restartDim_vals, "\n")
 
-# 	# eigval_basic_vals[index], nb_it_vals_basic[index] = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],
-# 	# 	dims[2] , innerLoopDim, 1.0e-6)
-# 	# eigval_restart_vals[index], nb_it_vals_restart[index] = jacDavRitzHarm_restart(trgBasis,srcBasis,kMat,opt,dims[1],
-# 	# 	dims[2],innerLoopDim,restartDim,1.0e-6)
-# end 
+print("No restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
+print("Restart - HarmonicRitz smallest positive eigenvalue is ", eigval_restart_vals, "\n")
+println("Julia smallest positive eigenvalue is ", julia_min_eigval,"\n")
 
-# print("restartDim_vals ", restartDim_vals, "\n")
+println("Number of iterations to conv for basic program ", nb_it_vals_basic,"\n")
+println("Number of iterations to conv for restart program ", nb_it_vals_restart,"\n")
 
-# print("No restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
-# print("Restart - HarmonicRitz smallest positive eigenvalue is ", eigval_restart, "\n")
-# println("Julia smallest positive eigenvalue is ", julia_min_eigval,"\n")
-
-# println("Number of iterations to conv for basic program ", nb_it_vals_basic,"\n")
-# println("Number of iterations to conv for restart program ", nb_it_vals_restart,"\n")
-
- 
+plot!(restartDim_vals,nb_it_vals_restart)
+xlabel!("Restart size")
+ylabel!("Number of iterations")
