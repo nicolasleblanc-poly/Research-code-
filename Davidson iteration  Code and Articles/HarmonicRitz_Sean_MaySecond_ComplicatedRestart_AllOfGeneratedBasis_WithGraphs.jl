@@ -448,7 +448,7 @@ kMat = zeros(ComplexF64, dims[2], dims[2])
 # 	dims[2] , innerLoopDim, 1.0e-6) ", jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],
 # 	dims[2] , innerLoopDim, 1.0e-6), "\n")
 eigval_basic, nb_it_vals_basic = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, 
-	opt, dims[1], dims[2] , innerLoopDim, 1.0e-6)
+	opt, dims[1], dims[2] , innerLoopDim, 1.0e-3)
 
 
 # for index in eachindex(length(restartDim_vals))
@@ -460,7 +460,7 @@ eigval_basic, nb_it_vals_basic = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat,
 	srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 	kMat = zeros(ComplexF64, dims[2], dims[2])
 	eigval_restart_vals[index], nb_it_vals_restart[index] = jacDavRitzHarm_restart(trgBasis,srcBasis,kMat,opt,dims[1],
-		dims[2],innerLoopDim,restartDim_vals[index],1.0e-6)
+		dims[2],innerLoopDim,restartDim_vals[index],1.0e-3)
 	print("eigval_restart_vals[index] ", eigval_restart_vals[index], "\n")
 	print("nb_it_vals_restart[index] ", nb_it_vals_restart[index], "\n")
 end 

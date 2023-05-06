@@ -430,7 +430,7 @@ innerLoopDim = 256
 restartDim = 20
 
 eigval_basic = jacDavRitzHarm_basic(trgBasis, srcBasis, kMat, opt, dims[1],
-	dims[2] , innerLoopDim, 1.0e-6)
+	dims[2] , innerLoopDim, 1.0e-3)
 # jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, 
 # 	srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, 
 # 	opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, 
@@ -444,7 +444,7 @@ srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
 
 eigval_restart = jacDavRitzHarm_restart(trgBasis,srcBasis,kMat,opt,dims[1],
-	dims[2],innerLoopDim,restartDim,1.0e-6)
+	dims[2],innerLoopDim,restartDim,1.0e-3)
 
 print("No restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
 print("Restart - HarmonicRitz smallest positive eigenvalue is ", eigval_restart, "\n")
