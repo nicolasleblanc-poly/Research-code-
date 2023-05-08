@@ -1,6 +1,6 @@
 module bicg_asym_only 
 export bicg
-using product, LinearAlgebra, vector
+using product, LinearAlgebra, vector, Base.Threads 
 # Based on the example code from p. 686 (or p.696 of the pdf) of the Introduction to Numerical Analysis textbook
 # Code for the AA case 
 # This is a biconjugate gradient program without a preconditioner

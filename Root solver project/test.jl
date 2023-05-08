@@ -200,6 +200,7 @@ function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
         for i in eachindex(px)
             approx[i] = rebuild(px[i], l, P, X)
         end 
+    end
     # else
     #     print("Don't need to resample everthing \n")
     #     px = rebuild_with
