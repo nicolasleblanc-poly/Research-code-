@@ -27,6 +27,8 @@ function jacDavRitzHarm_basic(trgBasis::Array{ComplexF64},
 	# Ritz vectors
 	hRitzTrg[:] = trgBasis[:, 1] # hk = wk 
 	hRitzSrc[:] = srcBasis[:, 1] # fk = vk
+	# print("size(hRitzSrc) ", size(hRitzSrc), "\n")
+
 	# Negative residual vector
 	resVec = (theta .* hRitzSrc) .- hRitzTrg # theta_tilde*vk - wk
 
@@ -126,6 +128,7 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 	# Negative residual vector
 	resVec = (theta .* hRitzSrc) .- hRitzTrg # theta_tilde*vk - wk
 
+	
 	# innerLoopDim = Int(repDim/4)
 
 	# Code with restart
@@ -154,8 +157,11 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 			kMat = zeros(ComplexF64, vecDim, vecDim)
 			# kMat[1:restartDim,1:restartDim] = restart_kMat 
 			kMat[:,1:restartDim] = restart_kMat
+			
+			print("size(hRitzSrc) ", size(hRitzSrc), "\n")
+			print("typeof(hRitzSrc) ", typeof(hRitzSrc), "\n")
 
-			print("kMat[:,1:restartDim] ", kMat[:,1:restartDim], "\n")
+			# print("kMat[:,1:restartDim] ", kMat[:,1:restartDim], "\n")
 
 			for itr in restartDim : innerLoopDim-restartDim # Need to determine when this for loops stops 
 				# depending on how much memory the laptop can take before crashing.
@@ -199,7 +205,7 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 					return real(theta) 
 					# println(real(theta))
 				end
-				print("norm(resVec) restart program ", norm(resVec),"\n")
+				# print("norm(resVec) restart program ", norm(resVec),"\n")
 			end
 		
 		# Essentially for the case when it = 0
@@ -246,24 +252,24 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 					return real(theta) 
 					# println(real(theta))
 				end
-				print("norm(resVec) restart program ", norm(resVec),"\n")
+				# print("norm(resVec) restart program ", norm(resVec),"\n")
 			end
 		end 
 
-		print("size(srcBasis) ", size(srcBasis), "\n")
-		print("innerLoopDim ", innerLoopDim, "\n")
-		print("restartDim ", restartDim, "\n")
+		# print("size(srcBasis) ", size(srcBasis), "\n")
+		# print("innerLoopDim ", innerLoopDim, "\n")
+		# print("restartDim ", restartDim, "\n")
 		restart_srcBasis = srcBasis[:,innerLoopDim-restartDim+1:innerLoopDim]
-		println("Finished inner loop \n")
+		# println("Finished inner loop \n")
 
 		restart_resVec = resVec
 		restart_hRitzTrg = hRitzTrg
-		restart_hRitzSrc = srcBasis
+		restart_hRitzSrc = hRitzSrc
 		restart_trgBasis = trgBasis[:,innerLoopDim-restartDim+1:innerLoopDim]
 		# restart_kMat = kMat[innerLoopDim-restartDim+1:innerLoopDim
 		# 		,innerLoopDim-restartDim+1:innerLoopDim]
 		restart_kMat = kMat[:,innerLoopDim-restartDim+1:innerLoopDim]
-		print("restart_kMat ", restart_kMat, "\n")
+		# print("restart_kMat ", restart_kMat, "\n")
 
 		# Once we have ran out of memory, we want to restart the inner loop 
 		# but not with random starting vectors and matrices but with the ones
@@ -415,7 +421,7 @@ minEigPos = argmin(abs.(trueEigSys.values))
 julia_min_eigval = trueEigSys.values[minEigPos]
 
 dims = size(opt)
-print("dims ", dims, "\n")
+# print("dims ", dims, "\n")
 
 bCoeffs1 = Vector{ComplexF64}(undef, dims[2])
 bCoeffs2 = Vector{ComplexF64}(undef, dims[2])
@@ -448,6 +454,10 @@ trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
 
+# jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, 
+# 	srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, 
+# 	opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, 
+# 	innerLoopDim::Integer,restartDim::Integer,tol::Float64)::Float64
 eigval_restart = jacDavRitzHarm_restart(trgBasis,srcBasis,kMat,opt,dims[1],
 	dims[2],innerLoopDim,restartDim,1.0e-6)
 

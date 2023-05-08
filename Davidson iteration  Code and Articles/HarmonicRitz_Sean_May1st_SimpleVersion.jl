@@ -367,11 +367,11 @@ trgBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
 
-innerLoopDim = 200
-restartDim = 50
+innerLoopDim = 240
+restartDim = 20
 
 eigval_basic = jacDavRitzHarm(trgBasis, srcBasis, kMat, opt, dims[1], dims[2], 
-	innerLoopDim, 1.0e-3)
+	innerLoopDim, 1.0e-6)
 
 
 # jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, 
@@ -387,7 +387,13 @@ srcBasis = Array{ComplexF64}(undef, dims[1], dims[2])
 kMat = zeros(ComplexF64, dims[2], dims[2])
 
 eigval_restart = jacDavRitzHarm_restart(trgBasis,srcBasis,kMat,opt,dims[1],
-	dims[2],innerLoopDim,restartDim,1.0e-4)
+	dims[2],restartDim,innerLoopDim,1.0e-6)
+# function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64}, 
+# 	srcBasis::Array{ComplexF64}, kMat::Array{ComplexF64}, 
+# 	opt::Array{ComplexF64}, vecDim::Integer, repDim::Integer, 
+# 	restartDim::Integer,innerLoopDim::Integer,tol::Float64)::Float64
+
+
 print("No restart - HarmonicRitz smallest positive eigenvalue is ", eigval_basic, "\n")
 print("Restart - HarmonicRitz smallest positive eigenvalue is ", eigval_restart, "\n")
 println("Julia smallest positive eigenvalue is ", julia_min_eigval,"\n")

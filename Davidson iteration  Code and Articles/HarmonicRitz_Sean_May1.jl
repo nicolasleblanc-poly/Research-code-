@@ -518,7 +518,7 @@ end
 # 	1.0 + im*0.0  -1.0 + im*0.0  4.0 + im*0.0]
 
 # For RND tests 
-sz = 10
+sz = 256
 opt = Array{ComplexF64}(undef,sz,sz)
 rand!(opt)
 
