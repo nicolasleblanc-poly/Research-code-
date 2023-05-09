@@ -73,10 +73,11 @@ function jacDavRitzHarm_basic(trgBasis::Array{ComplexF64},
 		# add tolerance check here
 		if norm(resVec) < tol
 			print("Converged off tolerance \n")
+			print("norm(resVec) ", norm(resVec), "\n")
 			return real(theta) 
 			# println(real(theta))
 		end
-		print("norm(resVec) basic program ", norm(resVec),"\n")
+		# print("norm(resVec) basic program ", norm(resVec),"\n")
 	end
  
 	print("Didn't converge off tolerance for basic program. 
@@ -158,8 +159,8 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 			# kMat[1:restartDim,1:restartDim] = restart_kMat 
 			kMat[:,1:restartDim] = restart_kMat
 			
-			print("size(hRitzSrc) ", size(hRitzSrc), "\n")
-			print("typeof(hRitzSrc) ", typeof(hRitzSrc), "\n")
+			# print("size(hRitzSrc) ", size(hRitzSrc), "\n")
+			# print("typeof(hRitzSrc) ", typeof(hRitzSrc), "\n")
 
 			# print("kMat[:,1:restartDim] ", kMat[:,1:restartDim], "\n")
 
@@ -202,6 +203,7 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 				# add tolerance check here
 				if norm(resVec) < tol
 					print("Converged off tolerance \n")
+					print("norm(resVec) ", norm(resVec), "\n")
 					return real(theta) 
 					# println(real(theta))
 				end
@@ -249,6 +251,7 @@ function jacDavRitzHarm_restart(trgBasis::Array{ComplexF64},
 				# add tolerance check here
 				if norm(resVec) < tol
 					print("Converged off tolerance \n")
+					print("norm(resVec) ", norm(resVec), "\n")
 					return real(theta) 
 					# println(real(theta))
 				end
